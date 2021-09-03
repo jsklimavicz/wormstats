@@ -1,0 +1,471 @@
+\documentclass[11pt, letterpaper]{article}
+\usepackage{amsmath, amssymb, gensymb, bm, amsthm}
+\usepackage[left=1in, right=1in, top=1in, bottom=1in]{geometry}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\mc}[1]{\mathcal{#1}}
+\newcommand{\Beta}{\text{Beta}}
+\newcommand{\Bin}{\text{Bin}}
+\hyphenation{mel-an-o-gast-er}
+
+\makeatletter
+\renewcommand*\env@matrix[1][\arraystretch]{%
+  \edef\arraystretch{#1}%
+  \hskip -\arraycolsep
+  \let\@ifnextchar\new@ifnextchar
+  \array{*\c@MaxMatrixCols c}}
+\makeatother
+
+\allowdisplaybreaks
+
+%\renewcommand\qedsymbol{$\leftthumbsup$}
+
+\begin{document}
+\title{Dos-Response Curve Fitting for the Project Merlin Bioassay}
+\date{\today}
+\author{James Klimavicz}
+\maketitle
+
+\section{Introduction}
+\subsection{General Information}
+A single unit of the Merlin bioassay comprises of a 96-well microplate in which \textit{Drosophila melanogaster} L1 larvae are reared in a liquid medium containing nominally known concentrations of a test compound. The eight rows of the plate allow for testing of up to eight different compounds, and each compound is tested at (generally) ten different concentrations using two-fold serial dilutions.
+
+Each compound of interest (herein, the compound) will eventually be tested on $m>1$ plates for the purpose of replicates. Each plate $j$ contains $n_j$ wells typically 10) dosed with the compound; with $m$ plates, we therefore have $n = \sum_{j=1}^m n_j$ wells to consider. Each well $n_i$ contains the compound in a concentration of $y_i$, and at the end of the assay, contains $a_i$ alive larvae and $d_i$ dead larvae. 
+
+Our interest is in fitting a dose-response curve to this data, using the survival in a well, $s_i = \frac{a_i}{a_i+d_i}$, as a response variable to the concentration of the compound. We use the logistic curve 
+\begin{align*}
+s(x) &= \frac{1}{\left(1+e^{b_0 + b_1x}\right)^{b_2}},
+\end{align*}
+where $s(x)$ is the estimated survival at concentration $e^x = c$ (that is, $x = \log c$ for some concentration $c$), and $\bm b = (b_0, b_1, b_2)$ are curve parameters. When $b_2 =1$, we end up with the two-parameter logistic curve 
+\begin{align*}
+s(x) &= \frac{1}{1+e^{b_0 + b_1x}},
+\end{align*}
+while we otherwise have the three parameter logistic curve.
+
+Under traditional methods, we would use nonlinear least squares to fit the points $$(x_1, s_1), (x_2, s_2), \dots, (x_n, s_n)$$ to the curve $s = f(x, \bm b)$, while minimizing the sum of squares of the residuals $$S = \sum_{i=1}^n \left(s_i - f(x_i, \bm b) \right)^2.$$ If desired, we can weight the residuals based on how many larvae are in a well, on the basis that wells with more larvae ought to be considered more reliable; in this case, we would have $$S = \sum_{i=1}^n W_i\left(s_i - f(x_i, \bm b) \right)^2,$$
+where $W_i = (a_i+d_i)$, a weighting equal to the total number of larvae in the well, and inversely proportional to the error variance of a binomial random variable. Then we have $$ \hat{\bm b} = \arg \min_{\bm b} \sum_{i=1}^n W_i\left(s_i - f(x_i, \bm b) \right)^2,$$ which can be found using the usual optimization methods. 
+
+\subsection{Beginning of the Bayesian Framework}
+In our assay, $a_i$ and $d_i$ are estimated by the program I wrote that analyzes the platereader images. Because these values are probabilistic estimates, they are not confined the non-zero integers, and instead can take on any non-negative real value. While this can present an issue for a true binomial distribution, we will be using Bayesian inference methods, and this is not a problem. Instead, $a_i$ and $d_i$ represent the evidence in the Bayesian framework, and we will use weakly informative or uninformative priors to drive our inference. 
+
+Because $a_i$ and $d_i$ are representative of binomial data, we can use $\Beta (1,1) = U(0,1)$ as an uninformative prior; this has the added benefit of being identical to the rule of succession method. We then have $s_i \sim \Beta(a_i + 1, d_i +1)$ as the posterior distribution, and sampling this distribution allows us to easily bootstrap thousands of replicates based on one trial to get Bayesian credible intervals. 
+\subsubsection{Correlation between wells}
+Of considerable interest is the potential to have correlation between adjacent wells--this stems from the fact that the concentrations in the wells are determined by serial dilution. There are several possible ways to handle potential correlation; several of these are as follows: 
+\begin{enumerate}
+\item Assume that all wells are independent, and that there is no correlation between wells of the same compound in a plate, or
+\item All wells $w_i$ and $w_j$ have a constant correlation $\rho$ for $i \neq j$, or
+\item The correlation $\rho_{i,j}$ between wells $w_i$ and $w_j$ should fall as the number of dilutions between $w_i$ and $w_j$ increases. 
+\end{enumerate}
+The assumption of no correlation, while easiest, is likely a poor choice, as $c_{i+1}$ is of course dependent on $c_i$, as any difference in the actual concentration a well and the nominal concentration are likely to propagate down the plate. If we assume that each serial dilution is performed adequately, then any differences between the nominal and actual concentrations should be due to random error, and the thus the correlation between wells $w_i$ and $w_j$ should fall as the number of dilutions between them increases. 
+\subsubsection{Production of correlated Beta random variables}\label{sect:sigma}
+To produce correlated beta random variables, we first create a multivariate normal distribution $\mc N(\bm 0, \bm \Sigma)$ with dimension $n$ and covariance matrix $\bm \Sigma \in \mbb R^{n \times n}$ with $\text{diag} (\bm \Sigma) = (1, 1, \dots, 1)$, and sample a standard normal random vector $\bm x = (x_1, x_2, \dots, x_n)^T$ from this distribution $N$ times, where $N$ is the number of bootstraps we wish to use. We note that since $\text{diag} (\bm \Sigma) = (1, 1, \dots, 1)$, the marginal of each dim of $\mc N(\bm 0, \bm \Sigma)$ is the standard normal distribution $\mc N(0,1)$. Let $\bm \Phi^{-1} : \mbb R^n \to \mbb R^n$ be the multivariate Gaussian copula, that is, $\bm \Phi^{-1}(\bm x) = \left( \Phi^{-1}(x_1),  \Phi^{-1}(x_2), \dots,  \Phi^{-1}(x_n)\right)^T\in (0,1)^n$, where $ \Phi^{-1}$ is the inverse cumulative distribution function of the standard normal distribution. 
+
+Then define function $\textbf{F}: (0,1)^n \times \mbb R^n \times \mbb R^n \to (0,1)^n$ as the Beta quantile function such that, given shape parameter vectors $\bm a = (a_1, a_2, \dots, a_n)$ and $\bm d = (d_1, d_2, \dots, d_n)$, $\textbf{F}(\bm y, \bm a, \bm d) = \left(F(y_1, a_1, d_1), F(y_2, a_2, d_2), \dots, F(y_n, a_n, d_n) \right)$, where $F(y_i, a_i, d_i)$ is the Beta quantile function for quantile $y_i$ with Beta distribution shape parameters $a_i$ and $d_i$. Then $\bm F\left(\bm \Phi^{-1} (\bm x), \bm a, \bm d \right)$ produces random vectors of correlated beta variables, with correlations determined by $\bm  \Sigma$. All that remains now is to construct a suitable $\bm  \Sigma$. 
+
+Without loss of generality, number the plates a compound is tested in as $p_1, p_2,\dots, p_k, \dots, p_m$, where $p_j$ has $n_j$ wells. Additionally, order the wells by plate such that wells $1$ to $n_1$ are arranged such that $c_1 > c_2 > \cdots > c_{n_1}$, wells $n_1+1$ to $n_1+n_2$ are arranged such that $c_{n_1+1} > c_{n_1+2} > \cdots > c_{n_1 +n_2}$, and so on, up to wells $n - n_j + 1$ to $n$, where $c_{n-n_j+1} > c_{n - n_j+2} > \cdots > c_{n}$; that is, wells are ordered by plate, and within each plate, ordered by decreasing concentration. This is a logical order as this is how the plates are set up for the bioassay.
+
+We now with to construct a suitable $\bm  \Sigma$ in which correlations are higher for adjacent wells than for distant wells. Define a correlation matrix for plate $k$, $\bm P_k$, such that 
+\begin{align*}
+\bm P_{k_{i,j}} & = \begin{cases}
+1 & \text{if } i = j \\
+\rho \cdot 2 ^{1-|i-j|} & \text{if } i \neq j 
+\end{cases} \qquad
+= \begin{bmatrix}[1.5]
+1 & \rho& \frac{\rho}{2} & \frac{\rho}{4} & \frac{\rho}{8} & \cdots & \frac{\rho}{2^{2-j}} \\
+\rho & 1 & \rho & \frac{\rho}{2} & \frac{\rho}{4} & \cdots & \frac{\rho}{2^{3-j}} \\
+\frac{\rho}{2} & \rho & 1 & \rho& \frac{\rho}{2} &  \cdots & \frac{\rho}{2^{4-j}} \\
+\frac{\rho}{4} & \frac{\rho}{2} & \rho & 1   & \rho &  \cdots & \frac{\rho}{2^{5-j}} \\
+\frac{\rho}{8} & \frac{\rho}{4} & \frac{\rho}{2} & \rho & 1  &  \cdots & \frac{\rho}{2^{6-j}} \\
+\vdots & \vdots & \vdots & \vdots & \vdots &\ddots & \vdots \\
+\frac{\rho}{2^{2-i}} & \frac{\rho}{2^{3-i}} & \frac{\rho}{2^{4-i}} & \frac{\rho}{2^{5-i}} & \frac{\rho}{2^{6-i}} & \cdots & 1 \\
+\end{bmatrix}
+\end{align*}
+for some $\rho \in (-0.25,0.25)$.\footnote{The bounds on $\rho$ are actually substantially more generous, with $\rho \in [-1/3,2/3]$ as $n \to \infty$. See the Appendix for details.}
+
+Now define the diagonal block matrix
+\begin{align*}
+\bm \Sigma = \bigoplus^m_{k=1} \bm P_k = 
+\begin{bmatrix}
+\bm P_1 & \bm 0 & \bm 0 & \cdots & \bm 0 \\
+\bm 0 & \bm P_2 & \bm 0 & \cdots & \bm 0 \\
+\bm 0 & \bm 0 & \bm P_3 & \cdots & \bm 0 \\
+\vdots & \vdots & \vdots &\ddots & \vdots\\
+\bm 0 & \bm 0 & \bm 0 & \cdots & \bm P_m \\
+\end{bmatrix}.
+\end{align*}
+All that remains is to show that $\bm \Sigma$ is symmetric positive definite, which is required for $\mc N(\bm 0, \bm \Sigma)$ to be a non-degenerate multivariate normal distribution. 
+\begin{proof}
+By construction, each $\bm P_k$ is symmetrical and real-valued (and therefore Hermitian), and thus all eigenvalues of \bm $P_k$ are real. By choice of $\rho \in [-0.25,0.25]$, we have, for any fixed $i$,
+\begin{align*}
+\sum_{i\neq j} | \bm P_{k_{i,j}}| &< 2 \sum_{i=0}^n |\rho| \cdot 2^{-i} \\
+&< 2|\rho| \sum_{i=0}^\infty 2^{-i} \\
+&= 4|\rho|\\
+&< \bm P_{k_{i,i}} = 1,
+\end{align*}
+and so $\bm P_k$ is diagonally dominant. By the Gershgorin Circle theorem, all the eigenvalues of $\bm P_k$ are strictly positive, and thus, $\bm P_k$ is positive definite. Since $\bm \Sigma$ is block diagonal with off-diagonal blocks as $\bm 0$, we have 
+$$ \text{eigen} \left(\bm \Sigma\right) = \bigcup_{k=1}^m \text{eigen}\left(\bm P_k\right),$$
+and thus  $\bm \Sigma$ is positive definite.\qedhere
+\end{proof}
+\section{Bayesian Curve Fitting}
+\subsection{Two-Parameter Logistic Curve}
+We first note that the complement to the logistic curve $$y(x, \bm b) = \frac{1}{1+\exp(b_0+b_1x)} $$ is 
+\begin{align*}
+1 - y(x, \bm b) & = 1- \frac{1}{1+\exp(b_0+b_1x)} \\
+& = \frac{\exp(b_0+b_1x)}{1+\exp(b_0+b_1x)}.
+\end{align*}
+For simplicity, we set $\xi = \exp(b_0 + b_i x)$, so 
+\begin{align*}
+y(x, \bm b) = \frac{1}{1+\xi}; \qquad 1 - y(x, \bm b) =  \frac{\xi}{1+\xi}
+\end{align*}
+\subsubsection{Log-likelihood function}\label{sect:l2-ll}
+Using Bayes' law with evidence $\bm \theta$, we can fit $y(x, \bm b)$ by finding the appropriate posterior distribution of $\bm b$ given $\bm \theta$. Specifically, we have 
+\begin{align*}
+f(\bm b | \bm \theta) &= k f(\bm \theta | \bm b) f(\bm b)
+\end{align*}
+for prior distribution $f(\bm b)$, conditional probability $f(\bm \theta | \bm b)$, and regularization parameter $k$ such that $1 = k\int_\Omega f( \bm b | \bm \theta) d \bm \theta$.\footnote{The value of $k$ itself is not usually important at this point, since it becomes a constant factor in the log-likelihood function that is not included for our purposes.} Then the conditional probability $f(\bm b | \bm \theta)$ is given by
+\begin{align*}
+f(\bm b | \bm \theta) &= k f(\bm b) \cdot \prod_{i=1}^n \left( \frac{\exp(b_0+b_1x_i)}{1+\xi_i}\right)^{\theta_i}\left( \frac{1}{1+\xi_i}\right)^{1-\theta_i}\\
+&= kf(\bm b) \cdot \prod_{i=1}^n \left( \frac{\exp(b_0+b_1x_i)^{\theta_i}}{\left(1+\xi_i\right)^{\theta_i}\left(1+\xi_i\right)^{1-\theta_i}}\right)\\
+&=k f(\bm b) \cdot  \frac{\exp\left(\sum_i \theta_i b_0+\sum_i \theta_i b_1x_i\right)}{\prod_{i=1}^n \left( 1+\xi_i\right)}
+\end{align*}
+
+If we use an uncorrelated multivariate normal Gaussian centered on $(0,0)$ for $\bm b$ with large variance $\sigma^2$, and using likelihood function $\mc L_2(\bm \theta | \bm b) = f(\bm b | \bm \theta) $we get the log-likelihood function
+
+\begin{align*}
+\ell_2(\bm b | \bm \theta) &= \ln \mc L_2(\bm \theta | \bm b) \\
+&= \ln( kf(\bm b)f(\bm b | \bm \theta)) \\
+&=\ln k + \ln \left(\frac{1}{2\pi \sigma^2} \exp \left(-\frac{b_0^2 + b_1^2}{2\sigma^2} \right) \right) + \ln \left( \frac{\exp\left(\sum_i \theta_i b_0+\sum_i \theta_i b_1x_i\right)}{\prod_{i=1}^n \left( 1+\xi_i\right)} \right) \\
+&= \ln k - \ln(2 \pi \sigma^2) - \frac{b_0^2 + b_1^2}{2\sigma^2} + b_0\sum_{i=1}^n \theta_i + b_1\sum_{i=1}^n \theta_ix_i - \sum_{i=1}^n \ln \left(1+\xi_i \right) \\
+& \cong - \frac{b_0^2 + b_1^2}{2\sigma^2} + b_0\sum_{i=1}^n \theta_i + b_1\sum_{i=1}^n \theta_ix_i - \sum_{i=1}^n \ln \left(1+\xi_i \right),
+\end{align*}
+for constant hyperparameter $\sigma$ after removal of constant terms.
+
+\subsubsection{Optimization of the log-likelihood function: The gradient}
+The gradient of the two-parameter log-likelihood function, $\nabla \ell_2(\bm b | \bm \theta)$, is given by
+\begin{align*}
+\nabla \ell_2(\bm b | \bm \theta) &= \begin{pmatrix}[2.2]
+\dfrac{\partial \ell_2}{\partial b_0}   \\
+\dfrac{\partial \ell_2}{\partial b_1}  
+\end{pmatrix},
+\end{align*}
+where 
+\begin{align*}
+\frac{\partial \ell_2 (\bm b | \bm \theta)}{\partial b_0}   &= -\frac{b_0}{\sigma^2} + \sum_{i=1}^n \theta_i - \sum_{i=1}^n \frac{\xi_i }{1+\xi_i} \\
+\frac{\partial \ell_2 (\bm b | \bm \theta)}{\partial b_1}   &= -\frac{b_1}{\sigma^2} + \sum_{i=1}^n \theta_i x_i - \sum_{i=1}^n \frac{x_i \xi_i }{1+\xi_i}.
+\end{align*}
+
+\subsubsection{Optimization of the log-likelihood function: The Hessian}
+The Hessian matrix of $\ell_2(\bm b | \bm \theta)$ is given by
+\begin{align*}
+H_{\ell_2} = \begin{bmatrix}[2.2]
+\dfrac{\partial^2 \ell_2}{\partial b_0 ^2} & \dfrac{\partial^2 \ell_2}{\partial b_0 \partial b_1} \\
+\dfrac{\partial^2 \ell_2}{\partial b_1  \partial b_0} & \dfrac{\partial^2 \ell_2}{\partial b_1^2} 
+\end{bmatrix},
+\end{align*}
+where 
+\begin{align*}
+\dfrac{\partial^2 \ell_2(\bm b | \bm \theta)}{\partial b_0 ^2} &= -\frac{1}{\sigma^2} - \sum_{i=1}^n \frac{\xi_i }{\left(1+\xi_i\right)^2} \\
+\dfrac{\partial^2 \ell_2(\bm b | \bm \theta)}{\partial b_0 \partial b_1} &= \dfrac{\partial^2 \ell_2(\bm b | \bm \theta)}{\partial b_1 \partial b_0} =  - \sum_{i=1}^n \frac{x_i \xi_i }{\left(1+\xi_i\right)^2} \\
+\dfrac{\partial^2 \ell_2(\bm b | \bm \theta)}{\partial b_0 ^2} &= -\frac{1}{\sigma^2} - \sum_{i=1}^n \frac{x_i^2\xi_i }{\left(1+\xi_i\right)^2} \;. \\
+\end{align*}
+\subsection{Three-Parameter Logistic Curve (Asymmetry Parameter)}
+With $\xi = \exp(b_0 + b_i x)$, we first note that the complement to the three-parameter logistic curve $$y(x, \bm b) = \frac{1}{(1+\xi)^{b_2}} $$ is 
+\begin{align*}
+1 - y(x, \bm b) & = 1- \frac{1}{(1+\xi)^{b_2}} \\
+& = \frac{(1+\xi)^{b_2} -1}{(1+\xi)^{b_2}}.
+\end{align*}
+
+\subsubsection{Log-likelihood function}
+As in Section \ref{sect:l2-ll}, we begin with Bayes's theorem.The conditional probability $f(\bm b | \bm \theta)$ is given by
+\begin{align*}
+f(\bm b | \bm \theta) &= k f(\bm \theta | \bm b) f(\bm b) \\
+&= k f(\bm b) \cdot \prod_{i=1}^n \left( \frac{(1+\xi_i)^{b_2} - 1}{(1+\xi_i)^{b_2}}\right)^{\theta_i}\left( \frac{1}{(1+\xi_i)^{b_2}}\right)^{1-\theta_i}\\
+&= kf(\bm b) \cdot \prod_{i=1}^n \left( \frac{\left((1+\xi_i)^{b_2}-1 \right)^{ \theta_i}}{\left(1+\xi_i\right)^{b_2\theta_i}\left(1+\xi_i\right)^{b_2(1-\theta_i)}}\right)\\
+&=k f(\bm b) \cdot  \frac{\prod_{i=1}^n \left( (1+\xi_i)^{b_2}-1 \right)^{\theta_i}}{\prod_{i=1}^n (1+\xi_i)^{b_2}}.
+\end{align*}
+For our choice of priors on $\bm b$, we again select $(b_0, b_1)$ to have a multivariate Gaussian distribution $\mc N(\bm 0, \sigma I_2)$, where $I_2$ is the $2 \times 2$ identity matrix. For $b_2$, which should remain strictly positive, we use a gamma distribution prior $$ g(x) = \frac{\beta^\alpha}{\Gamma(\alpha)} x^{\alpha-1}e^{-\beta x},$$
+where  $\alpha$ and $\beta$ are shape and rate parameters, respectively.
+Using the likelihood function $\mc L_3(\bm \theta | \bm b) = f(\bm b | \bm \theta)$, we get the log-likelihood function
+\begin{align*}
+\ell_3(\bm b | \bm \theta) &= \ln \mc L_3(\bm \theta | \bm b) \\
+&= \ln( kf(\bm b)f(\bm b | \bm \theta)) \\
+&=\ln k + \ln \left(\frac{1}{2\pi \sigma^2} \exp \left(\frac{b_0^2 + b_1^2}{2\sigma^2} \right) \right) + \ln \left(\frac{\beta^\alpha}{\Gamma(a)} b_2^{\alpha-1}e^{-\beta b_2}\right) + \ln\prod_{i=1}^n \left( (1+\xi_i)^{b_2}-1 \right)^{\theta_i} \\
+&\qquad - \ln \prod_{i=1}^n (1+\xi_i)^{b_2} \\
+&= \ln k - \ln(2\pi) - 2 \ln \sigma + \frac{b_0^2 + b_1^2}{2\sigma^2} + \ln \left( \frac{\beta^\alpha}{\Gamma(\alpha)} \right) + (\alpha-1)\ln b_2 -\beta b_2 \\
+&\qquad + \sum_{i=1}^n \theta_i \ln \left((1+\xi_i)^{b_2}-1\right) - b_2\sum_{i=1}^n  \ln (1+\xi_i) \\
+&\cong - 2 \ln \sigma + \frac{b_0^2 + b_1^2}{2\sigma^2} + (\alpha-1)\ln b_2 -\beta b_2  + \sum_{i=1}^n \theta_i \ln \left((1+\xi_i)^{b_2}-1\right) - b_2\sum_{i=1}^n  \ln (1+\xi_i)
+\end{align*}
+for constant hyperparameters $\sigma, \alpha, \beta$ after removal of constant terms.
+
+\subsubsection{Optimization of the log-likelihood function: The gradient}
+The gradient of the three-parameter log-likelihood function, $\nabla \ell_2(\bm b | \bm \theta)$, is given by
+\begin{align*}
+\nabla \ell_3(\bm b | \bm \theta) &= \begin{pmatrix}
+\dfrac{\partial \ell_3}{\partial b_0},   & \dfrac{\partial \ell_3}{\partial b_1} , & \dfrac{\partial \ell_3}{\partial b_2} 
+\end{pmatrix}^T,
+\end{align*}
+where 
+\begin{align*}
+\frac{\partial \ell_3 (\bm b | \bm \theta)}{\partial b_0}   &= \frac{b_0}{\sigma^2} + b_2 \sum_{i=1}^n \frac{\theta_i \xi_i\left(1+\xi_i \right)^{b_2-1}}{(1+\xi_i)^{b_2} - 1} - b_2 \sum_{i=1}^n \frac{\xi_i}{1+ \xi_i} \\
+\frac{\partial \ell_3 (\bm b | \bm \theta)}{\partial b_1}   &= \frac{b_1}{\sigma^2} + b_2 \sum_{i=1}^n \frac{\theta_i x_i \xi_i\left(1+ \xi_i\right)^{b_2-1}}{(1+\xi_i)^{b_2} - 1} - b_2 \sum_{i=1}^n \frac{x_i \xi_i}{1+\xi_i} \\
+\frac{\partial \ell_3 (\bm b | \bm \theta)}{\partial b_2}   &= \frac{\alpha -1}{b_2} - \beta + \sum_{i=1}^n \frac{\theta_i (1+\xi_i)^{b_2}\ln(1+\xi_i)}{(1+\xi_i)^{b_2}-1}  -\sum_{i=1}^n  \ln (1+\xi_i).
+\end{align*}
+
+
+\subsubsection{Optimization of the log-likelihood function: The Hessian}
+The Hessian matrix of $\ell_3(\bm b | \bm \theta)$ is given by
+\begin{align*}
+H_{\ell_3} = \begin{bmatrix}[2.2]
+\dfrac{\partial^2 \ell_3}{\partial b_0 ^2} & \dfrac{\partial^2 \ell_3}{\partial b_0 \partial b_1} & \dfrac{\partial^2 \ell_3}{\partial b_0 \partial b_2} \\
+\dfrac{\partial^2 \ell_3}{\partial b_1  \partial b_0} & \dfrac{\partial^2 \ell_3}{\partial b_1^2} & \dfrac{\partial^2 \ell_3}{\partial b_1 \partial b_2} \\
+\dfrac{\partial^2 \ell_3}{\partial b_2  \partial b_0}  & \dfrac{\partial^2 \ell_3}{\partial b_2 \partial b_1} & \dfrac{\partial^2 \ell_3}{\partial b_2^2}\\
+\end{bmatrix},
+\end{align*}
+where
+\begin{align*}
+\dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_0 ^2} &=  \frac{1}{\sigma^2} + b_2 \sum_{i=1}^n \frac{\theta_i \xi_i (1+\xi_i)^{b_2-2}((1+\xi_i)^{b_2} - 1 - b_2 \xi_i)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} -b_2 \sum_{i=1}^n \frac{ \xi_i}{(1+\xi_i )^2}\\
+\dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_0 \partial b_1} &= \dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_1 \partial b_0} =  b_2 \sum_{i=1}^n \frac{\theta_ix_i \xi_i (1+\xi_i)^{b_2-2}((1+\xi_i)^{b_2} - 1 - b_2 \xi_i)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} -b_2 \sum_{i=1}^n \frac{x_i \xi_i}{(1+\xi_i )^2}\\
+\dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_0 \partial b_2} &= \dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_2 \partial b_0} = \sum_{i=1}^n \frac{\theta_i\xi_i(1+\xi_i)^{b_2-1}\left((1+\xi_i)^{b_2}- b_2 \ln (1+\xi_i) -1 \right)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} - \sum_{i=1}^n \frac{\xi_i}{1+\xi_i}\\
+\dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_1 ^2} &= \frac{1}{\sigma^2} + b_2 \sum_{i=1}^n \frac{\theta_i x_i^2\xi_i (1+\xi_i)^{b_2-2}((1+\xi_i)^{b_2} - 1-b_2 \xi_i)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} -b_2 \sum_{i=1}^n \frac{x_i^2 \xi_i}{(1+\xi_i )^2}\\
+\dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_1 \partial b_2} &= \dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_2 \partial b_1} =  \sum_{i=1}^n \frac{\theta_i x_i\xi_i(1+\xi_i)^{b_2-1}\left((1+\xi_i)^{b_2}- b_2 \ln (1+\xi_i) -1 \right)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} - \sum_{i=1}^n \frac{x_i\xi_i}{1+\xi_i}\\
+\dfrac{\partial^2 \ell_3(\bm b | \bm \theta)}{\partial b_2 ^2} &= \frac{1-\alpha}{b_2^2} - \sum_{i=1}^n \frac{\theta_i(1+\xi_i)^{b_2}\ln ^2(1+\xi_i)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} \\
+\end{align*}
+
+\subsection{Three-Parameter Logistic Curve (Scale Parameter)}
+We now explore a three-parameter logistic curve wherein the third parameter is scale parameter, $b_2 \in (0,1)$, such that our curve is given by the formula
+$$ y(x, \bm b) = \frac{b_2}{1+\xi} .$$ 
+This curve is useful when we have high control mortality (with an average mortality rate of $1-b_2$), and thus an upper asymptote of 1 is no longer appropriate. We first note that the complement to this scaled three-parameter logistic curve is 
+\begin{align*}
+1 - y(x, \bm b) & = 1- \frac{b_2}{1+\xi} \\
+& = \frac{1+\xi - b_2}{1+\xi}.
+\end{align*}
+
+\subsubsection{Log-likelihood function}
+Beginning with Bayes's theorem, the conditional probability $f(\bm b | \bm \theta)$ is given by
+\begin{align*}
+f(\bm b | \bm \theta) &= k f(\bm \theta | \bm b) f(\bm b) \\
+&= k f(\bm b) \cdot \prod_{i=1}^n \left( \frac{1+\xi_i -b_2}{1+\xi_i}\right)^{\theta_i}\left( \frac{b_2}{1+\xi_i}\right)^{1-\theta_i}\\
+&= k f(\bm b) \cdot \prod_{i=1}^n \frac{\left(1+\xi_i -b_2\right)^{\theta_i}b_2^{1-\theta_i}}{1+\xi_i}.
+\end{align*}
+For our choice of priors on $\bm b$, we again select $(b_0, b_1)$ to have multivariate Gaussian distribution $\mc N(\bm 0, \sigma I_2)$, where $I_2$ is the $2 \times 2$ identity matrix. For $b_2 \in (0,1)$, we use a beta distribution prior $$ g(x) = \frac{\Gamma (\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)} x^{\alpha-1}(1-x)^{\beta -1},$$
+where  $\alpha$ and $\beta$ are shape parameters.
+Using the likelihood function $\mc L_{3^\prime}(\bm \theta | \bm b) = f(\bm b | \bm \theta)$, we get the log-likelihood function 
+\begin{align*}
+\ell_{3^\prime}(\bm b | \bm \theta) &= \ln \mc L_{3^\prime}(\bm \theta | \bm b) \\
+&= \ln \left( k \cdot \frac{1}{2\pi \sigma^2} \exp\left(-\frac{b_0^2+b_1^2}{2 \sigma^2}\right) \cdot \frac{\Gamma (\alpha+\beta)}{\Gamma(\alpha)\Gamma(\beta)} b_2^{\alpha-1}(1-b_2)^{\beta -1} \cdot \prod_{i=1}^n \frac{\left(1+\xi_i -b_2\right)^{\theta_i}b_2^{1-\theta_i}}{1+\xi_i}\right) \\
+&= \ln k - \ln 2\pi -2 \ln \sigma - \frac{b_0^2 + b_1^2}{2\sigma^2} + \ln \Gamma(\alpha + \beta) - \ln \Gamma(\alpha) - \ln \Gamma(\beta) + (\alpha-1)\ln b_2 \\
+&\qquad+ (\beta-1)\ln (1-b_2) + \sum_{i=1}^n \theta_i \ln(1 + \xi_i -b_2) + \sum_{i=1}^n (1-\theta_i)b_2 - \sum_{i=1}^n \ln(1+\xi_i) \\
+&\cong - \frac{b_0^2 + b_1^2}{2\sigma^2}  + (\alpha-1)\ln b_2 + (\beta-1)\ln (1-b_2) + \sum_{i=1}^n \theta_i \ln(1 + \xi_i -b_2) + \sum_{i=1}^n (1-\theta_i)\ln b_2 \\
+&\qquad - \sum_{i=1}^n \ln(1+\xi_i)
+\end{align*}
+for constant hyperparameters $\sigma, \alpha, \beta$ after removal of constant terms.
+
+\subsection{Four-Parameter Logistic Curve (Scale and Shape Parameters)}
+We now explore a four-parameter logistic curve given by the formula
+$$ y(x, \bm b) = \frac{b_3}{(1+\xi)^{b_2}} .$$ 
+This curve is useful when we have high control mortality (with an average mortality rate of $1-b_3$), and thus an upper asymptote of 1 is no longer appropriate, coupled with an asymmetric dose response. We first note that the complement to this scaled three-parameter logistic curve is 
+\begin{align*}
+1 - y(x, \bm b) & = 1- \frac{b_3}{(1+\xi)^{b_2}} \\
+& = \frac{(1+\xi)^{b_2} - b_3}{(1+\xi)^{b_2}}.
+\end{align*}
+
+\subsubsection{Log-likelihood function}
+Beginning with Bayes's theorem, the conditional probability $f(\bm b | \bm \theta)$ is given by
+\begin{align*}
+f(\bm b | \bm \theta) &= k f(\bm \theta | \bm b) f(\bm b) \\
+&= k f(\bm b) \cdot \prod_{i=1}^n \left( \frac{(1+\xi_i)^{b_2} -b_3}{(1+\xi_i)^{b_2}}\right)^{\theta_i}\left( \frac{b_3}{(1+\xi_i)^{b_2}}\right)^{1-\theta_i}\\
+&= k f(\bm b) \cdot \prod_{i=1}^n \frac{\left((1+\xi_i)^{b_2} -b_3\right)^{\theta_i}b_3^{1-\theta_i}}{(1+\xi_i)^{b_2}}.
+\end{align*}
+For our choice of priors on $\bm b$, we again select $(b_0, b_1)$ to have multivariate Gaussian distribution $\mc N(\bm 0, \sigma I_2)$, where $I_2$ is the $2 \times 2$ identity matrix. For shape parameter $b_2 \in \mbb R^+$, we use a gamma distribution prior 
+$$ g(b_2) = \frac{\beta^\alpha}{\Gamma(\alpha)} b_2^{\alpha-1}e^{-\beta b_2},$$
+where $\alpha$ and $\beta$ are shape and rate hyperparameters, respectively. We would really prefer parameter $b_3 \in (0,1)$, but for numerical optimizatino p 
+$$ g(b_3) = \frac{\Gamma (\kappa+\tau)}{\Gamma(\kappa)\Gamma(\tau)} b_3^{\kappa-1}(1-b_3)^{\tau -1},$$
+where  $\kappa$ and $\tau$ are shape hyperparameters.
+Using the likelihood function $\mc L_{4}(\bm \theta | \bm b) = f(\bm b | \bm \theta)$, we get the log-likelihood function 
+\begin{align*}
+\ell_{4}(\bm b | \bm \theta) &= \ln \mc L_{4}(\bm \theta | \bm b) \\
+&= \ln \left( k \cdot \frac{1}{2\pi \sigma^2} \exp\left(-\frac{b_0^2+b_1^2}{2 \sigma^2}\right) \cdot  \frac{\beta^\alpha}{\Gamma(\alpha)} b_2^{\alpha-1}e^{-\beta b_2} \cdot \frac{\Gamma (\kappa+\tau)}{\Gamma(\kappa)\Gamma(\tau)} b_3^{\kappa-1}(1-b_3)^{\tau -1} \right. \\
+&\qquad \cdot \left. \prod_{i=1}^n \frac{\left(1+\xi_i -b_2\right)^{\theta_i}b_2^{1-\theta_i}}{1+\xi_i}\right) \\
+&= \ln k - \ln 2\pi -2 \ln \sigma - \frac{b_0^2 + b_1^2}{2\sigma^2} + \ln \frac{\beta^\alpha}{\Gamma(\alpha)} + (\alpha-1)\ln b_2 -\beta b_2 + \ln \frac{\Gamma(\kappa + \tau)}{\Gamma(\kappa)\Gamma(\tau)} \\
+&\qquad  + (\kappa-1)\ln b_3 + (\tau-1)\ln(1-b_3) + \sum_{i=1}^n \theta_i \ln\left( (1 + \xi_i)^{b_2} -b_3\right) + \sum_{i=1}^n (1-\theta_i)\ln b_3 \\
+&\qquad - b_2\sum_{i=1}^n \ln(1+\xi_i) \\
+&\cong - \frac{b_0^2 + b_1^2}{2\sigma^2} + (\alpha-1)\ln b_2 -\beta b_2 + 
+(\kappa-1)\ln b_3 + (\tau-1)\ln(1-b_3) \\
+&\qquad + \sum_{i=1}^n \theta_i \ln\left( (1 + \xi_i)^{b_2} -b_3\right) + \sum_{i=1}^n (1-\theta_i)\ln b_3 - b_2\sum_{i=1}^n \ln(1+\xi_i)
+\end{align*}
+for constant hyperparameters $\sigma, \alpha, \beta, \kappa, \tau$ after removal of constant terms that do not depend on $\bm b$. 
+
+\subsubsection{Optimization of the log-likelihood function: The gradient}
+The gradient of the four-parameter log-likelihood function, $\nabla \ell_4(\bm b | \bm \theta)$, is given by
+\begin{align*}
+\nabla \ell_4(\bm b | \bm \theta) &= \begin{pmatrix}
+\dfrac{\partial \ell_4}{\partial b_0},   & \dfrac{\partial \ell_4}{\partial b_1} , & \dfrac{\partial \ell_4}{\partial b_2} , & \dfrac{\partial \ell_4}{\partial b_3}
+\end{pmatrix}^T,
+\end{align*}
+where 
+\begin{align*}
+\frac{\partial \ell_4 (\bm b | \bm \theta)}{\partial b_0}   &= \frac{b_0}{\sigma^2} + b_2\sum_{i=1}^n \frac{\theta_i \xi_i (1+\xi_i)^{b_2-1}}{(1+\xi_i)^{b_2}-b_3} - b_2\sum_{i=1}^n \frac{\xi_i}{1+\xi_i}
+\\
+\frac{\partial \ell_4 (\bm b | \bm \theta)}{\partial b_1}   &= \frac{b_0}{\sigma^2} + b_2\sum_{i=1}^n \frac{x_i\theta_i \xi_i (1+\xi_i)^{b_2-1}}{(1+\xi_i)^{b_2}-b_3} - b_2\sum_{i=1}^n \frac{x_i\xi_i}{1+\xi_i}
+\\
+\frac{\partial \ell_4 (\bm b | \bm \theta)}{\partial b_2}   &= \frac{\alpha-1}{b_2} - \beta + \sum_{i=1}^n \frac{\theta_i (1+\xi_i)^{b_2}\ln(1+\xi_i)}{(1+\xi_i)^{b_2}-b_3}  -\sum_{i=1}^n  \ln (1+\xi_i) \\
+\frac{\partial \ell_4 (\bm b | \bm \theta)}{\partial b_3}   &= \frac{\kappa-1}{b_3} -\frac{\tau -1}{1-b_3 } -\sum_{i=1}^n \frac{\theta_i}{(1 + \xi_i)^{b_2} - b_3 } + \sum_{i=1}^n \frac{1-\theta_i}{b_3} \\
+\end{align*}
+
+\subsubsection{Optimization of the log-likelihood function: The Hessian}
+The Hessian matrix of $\ell_4(\bm b | \bm \theta)$ is given by
+\begin{align*}
+H_{\ell_4} = \begin{bmatrix}[2.2]
+\dfrac{\partial^2 \ell_4}{\partial b_0 ^2} & \dfrac{\partial^2 \ell_4}{\partial b_0 \partial b_1} & \dfrac{\partial^2 \ell_4}{\partial b_0 \partial b_2} & \dfrac{\partial^2 \ell_4}{\partial b_0 \partial b_3} \\
+\dfrac{\partial^2 \ell_4}{\partial b_1  \partial b_0} & \dfrac{\partial^2 \ell_4}{\partial b_1^2} & \dfrac{\partial^2 \ell_4}{\partial b_1 \partial b_2} & \dfrac{\partial^2 \ell_4}{\partial b_1 \partial b_3}\\
+\dfrac{\partial^2 \ell_4}{\partial b_2  \partial b_0}  & \dfrac{\partial^2 \ell_4}{\partial b_2 \partial b_1} & \dfrac{\partial^2 \ell_4}{\partial b_2^2} & \dfrac{\partial^2 \ell_4}{\partial b_2 \partial b_3}\\
+\dfrac{\partial^2 \ell_4}{\partial b_3  \partial b_0}  & \dfrac{\partial^2 \ell_4}{\partial b_3 \partial b_1} & \dfrac{\partial^2 \ell_4}{\partial b_3 \partial b_2} & \dfrac{\partial^2 \ell_4}{\partial b_3^2}
+\end{bmatrix},
+\end{align*}
+where
+\begin{align*}
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_0 ^2} &=  \frac{1}{\sigma^2} + b_2 \sum_{i=1}^n \frac{\theta_i \xi_i (1+\xi_i)^{b_2-2}((1+\xi_i)^{b_2} - b_2 b_3 \xi_i - b_3)}{\left((1+\xi_i)^{b_2} - b_3 \right)^2} -b_2 \sum_{i=1}^n \frac{ \xi_i}{(1+\xi_i )^2}\\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_0 \partial b_1} &= \dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_1 \partial b_0} =  b_2 \sum_{i=1}^n \frac{\theta_i x_i \xi_i (1+\xi_i)^{b_2-2}( (1+\xi_i)^{b_2}- b_2 b_3 \xi_i - b_3)}{\left((1+\xi_i)^{b_2}- b_3 \right)^2} -b_2 \sum_{i=1}^n \frac{x_i \xi_i}{(1+\xi_i )^2}\\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_0 \partial b_2} &= \dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_2 \partial b_0} = \sum_{i=1}^n \frac{\theta_i\xi_i(1+\xi_i)^{b_2-1}\left((1+\xi_i)^{b_2}- b_2 b_3 \ln (1+\xi_i) -b_3 \right)}{\left((1+\xi_i)^{b_2} - b_3 \right)^2} -\sum_{i=1}^n \frac{\xi_i}{1-\xi_i} \\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_0 \partial b_3} &= \dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_3 \partial b_0} = b_2 \sum_{i=1}^n \frac{\theta_i \xi_i(1+\xi_i)^{b_2+1}}{\left((1+\xi_i)^{b_2}- b_3 \right)^2}  \\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_1 ^2} &= \frac{1}{\sigma^2} + b_2 \sum_{i=1}^n \frac{\theta_i x_i^2\xi_i (1+\xi_i)^{b_2-2}(1+b_2 \xi_i - (1+\xi_i)^{b_2})}{\left((1+\xi_i)^{b_2} - 1 \right)^2} -b_2 \sum_{i=1}^n \frac{x_i^2 \xi_i}{(1+\xi_i )^2}\\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_1 \partial b_2} &= \dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_2 \partial b_1} =  \sum_{i=1}^n \frac{\theta_i x_i\xi_i(1+\xi_i)^{b_2-1}\left((1+\xi_i)^{b_2}- b_2 \ln (1+\xi_i) -1 \right)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} \\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_1 \partial b_3} &= \dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_3 \partial b_1} = \\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_2 ^2} &= \frac{1-\alpha}{b_2^2} - \sum_{i=1}^n \frac{\theta_i(1+\xi_i)^{b_2}\ln ^2(1+\xi_i)}{\left((1+\xi_i)^{b_2} - 1 \right)^2} \\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_2 \partial b_3} &= \dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{\partial b_3 \partial b_2} = \\
+\dfrac{\partial^2 \ell_4(\bm b | \bm \theta)}{ \partial b_3^2} &= \\
+\end{align*}
+
+
+\section{Appendix}
+\subsection{Larger permissible values of $\rho$ in covariance matrix}
+In section \ref{sect:sigma}, we proved that in the covariance matrix $$\bm \Sigma = \bigoplus^m_{k=1} \bm P_k$$
+with 
+$$\bm P_{k_{i,j}}  = \begin{cases}
+1 & \text{if } i = j \\
+\rho \cdot 2 ^{1-|i-j|} & \text{if } i \neq j 
+\end{cases}$$
+for some $\rho \in (0.25,0.25)$, and alluded to the fact that larger bounds on $\rho$ were permissible. We shall now prove this. 
+\begin{proof}
+First, we design matrix $A_n \in \mbb R ^{n\times n}$ such that 
+\begin{align*}
+A_{k_{i,j}}  &= \begin{cases}
+b & \text{if } i = j \\
+x ^{|i-j|} & \text{if } i \neq j 
+\end{cases} 
+\end{align*} 
+We note that if $b = \rho ^{-1}$, and if $x = 1/2$, then $\bm P_k = \rho x^{-1} A_n$, and thus for fixed dilution ratio $x$, we can find the full range of $b$ that gives positive definite $A_n$, and thence the values of $\rho$ that give positive definite $\bm P_k$.\footnote{If $\rho < 0$, then we are looking for a negative-definite $A_n$, to produce a positive definite $\bm P_k$, since all eigenvalues are multiplied by $\rho x^{-1}$. }
+
+
+First, we find the recursive formula for $D_n$, the determinant of $A_n$.
+\begin{align*}
+D_n = \det A_n &= \begin{vmatrix}
+b & x & x^2 & x^3 & \cdots & x^n \\
+x & b & x & x^2 & \cdots & x^{n-1} \\
+x^2 & x & b & x  & \cdots & x^{n-2} \\
+x^3 & x^2 & x & b & \cdots & x^{n-3} \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+x^n  & x^{n-1} & x^{n-2} & x^{n-3} & \cdots & b
+\end{vmatrix}\\
+&= \begin{vmatrix}
+b -x^2 & x & x^2 & x^3 & \cdots & x^n \\
+x-bx & b & x & x^2 & \cdots & x^{n-1} \\
+0 & x & b & x  & \cdots & x^{n-2} \\
+0 & x^2 & x & b & \cdots & x^{n-3} \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+0  & x^{n-1} & x^{n-2} & x^{n-3} & \cdots & b
+\end{vmatrix} \\
+&=  \begin{vmatrix}
+b -2x^2 +  bx^2 & x-bx & 0 & 0 & \cdots & 0 \\
+x-bx & b & x & x^2 & \cdots & x^{n-1} \\
+0 & x & b & x  & \cdots & x^{n-2} \\
+0 & x^2 & x & b & \cdots & x^{n-3} \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+0  & x^{n-1} & x^{n-2} & x^{n-3} & \cdots & b
+\end{vmatrix} \\
+& = \left(\left(b + (b-2)x^2\right) \det (A_{n-1}) \right) - 
+\left((1-b)x\right) \begin{vmatrix}
+(1-b)x  & x & x^2 & \cdots & x^{n-1} \\
+0  & b & x  & \cdots & x^{n-2} \\
+0  & x & b & \cdots & x^{n-3} \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+0  & x^{n-2} & x^{n-3} & \cdots & b
+\end{vmatrix} \\
+& = \left(\left(b + (b-2)x^2\right) \det (A_{n-1}) \right) - 
+\left((1-b)x\right)^2 \begin{vmatrix}
+b & x  & \cdots & x^{n-2} \\
+x & b & \cdots & x^{n-3} \\
+\vdots & \vdots & \ddots & \vdots \\
+x^{n-2} & x^{n-3} & \cdots & b
+\end{vmatrix} \\
+& = \left(\left(b + (b-2)x^2\right) \det (A_{n-1}) \right) - 
+\left((1-b)x\right)^2 \det (A_{n-2})
+\end{align*}
+We let $D_0 = 1$, and $\det A_1 = |b| = b$. Let $D_i = \det A_i$. (Note that a quick sanity check of the recurrence relation for $\det A_2 = \begin{vmatrix}
+b & x \\ x & b
+\end{vmatrix}$ gives $b^2-x^2$ as expected.) The first several determinants are:
+\begin{align*}
+D_0 &= 1\\
+D_1 &= b\\
+D_2 &= b^2 - x^2 \\
+D_3 &= b^3 - bx^4 - 2bx^2 + 2x^4 \\
+D_4 &= b^4 - 3 b^2 x^2 + x^4 + 4 b x^4 - 2 b^2 x^4 - 4 x^6 + 4 b x^6 - b^2 x^6
+\end{align*} 
+If we constrain $x = 1/2$ for our two-fold dilutions, we get
+\begin{align*}
+D_0 &= 1\\
+D_1 &= b\\
+D_2 &= b^2 - \frac{1}{4} \\
+D_3 &= b^3 - \frac{9b}{16} + \frac{1}{8} \\
+D_4 &= b^4 - \frac{57 b^2}{64} + \frac{5 b}{16}\\
+D_5 &= b^5 - \frac{313 b^3}{256} + \frac{67 b^2}{128} + \frac{3 b}{64} - \frac{1}{32} \\
+D_6 &= b^6 - \frac{1593 b^4}{1024} + \frac{95 b^3}{128} + \frac{45 b^2}{256} - \frac{9 b}{64} + \frac{1}{64}\\
+D_7 &= b^7 - \frac{7737 b^5}{4096} + \frac{1973 b^4}{2048} + \frac{207 b^3}{512} - \frac{93 b^2}{256} + \frac{b}{16} \\
+D_8 &= b^8 - \frac{36409 b^6}{16384} + \frac{4855 b^5}{4096} + \frac{1515 b^4}{2048} - \frac{23 b^3}{32} + \frac{145 b^2}{1024} + \frac{3 b}{256} - \frac{1}{256}
+\end{align*}
+
+
+
+
+The constant-recurrence sequence
+$$ D_n= \left(b + (b-2)x^2\right) D_{n-1} - \left((1-b)x\right)^2 D_{n-2}$$
+has characteristic equation 
+\begin{align*}
+0 &= d^2 - \left(b + (b-2)x^2\right) d + \left((1-b)x\right)^2\\
+&= d^2 - P d + Q, 
+\end{align*}
+where $P = \left(b + (b-2)x^2 \right)$ and $Q = (1-b)^2x^2$. By simple use of the quadratic formula, we get 
+\begin{align*}
+A = \frac{P+\sqrt{D}}{2}, \qquad B = \frac{P - \sqrt{D}}{2}, \qquad D = P^2 - 4Q.
+\end{align*}
+Then, using the initial conditions $D_0 = 1$ and $D_1 = b$, we must solve the system of equations 
+\begin{align*}
+\begin{cases}
+D_0 = 1 = k A^0 + l B^0 \\
+D_1 = b =  k A^1 + l B^1.
+\end{cases}
+\end{align*}
+Trivially, we have $l = 1-k$, and then, by noting that $A-B = \sqrt{D}$, it is easy to verify 
+\begin{align*}
+k = \frac{b - B}{\sqrt{D}}, \qquad
+l = \frac{A - b}{\sqrt{D}},
+\end{align*}
+and we thus have
+\begin{align*}
+D_n &= \frac{b - B}{\sqrt{D}}A^n + \frac{A - b}{\sqrt{D}}B^n \\
+&= \frac{b - \frac{P - \sqrt{D}}{2}}{\sqrt{D}}\left(\frac{P+\sqrt{D}}{2}\right)^n + \frac{\frac{P+\sqrt{D}}{2} - b}{\sqrt{D}}\left(\frac{P - \sqrt{D}}{2}\right)^n \\
+&= \frac{b - \frac{\left(b + (b-2)x^2 \right) - \sqrt{D}}{2}}{\sqrt{D}}\left(\frac{\left(b + (b-2)x^2 \right)+\sqrt{D}}{2}\right)^n  \\
+&\qquad\qquad\qquad + \frac{\frac{\left(b + (b-2)x^2 \right)+\sqrt{D}}{2} - b}{\sqrt{D}}\left(\frac{\left(b + (b-2)x^2 \right) - \sqrt{D}}{2}\right)^n \\
+&= \frac{b - (b-2)x^2 + \sqrt{D}}{2\sqrt{D}}\left(\frac{b + (b-2)x^2 +\sqrt{D}}{2}\right)^n  \\
+&\qquad\qquad\qquad + \frac{-b + (b-2)x^2 +\sqrt{D}}{2\sqrt{D}}\left(\frac{b + (b-2)x^2 - \sqrt{D}}{2}\right)^n.
+\end{align*}
+When $x=1/2$, we then have 
+\begin{align*}
+D_n &=\frac{\frac{3b + 2}{4}+ \sqrt{D^\prime}}{2\sqrt{D^\prime}}\left(\frac{\frac{5b - 2}{4} +\sqrt{D^\prime}}{2}\right)^n +  \frac{-\frac{3b + 2}{4} +\sqrt{D^\prime}}{2\sqrt{D^\prime}}\left(\frac{\frac{5b - 2}{4}  - \sqrt{D^\prime}}{2}\right)^n \\
+&= \frac{1}{8\sqrt{D^\prime}}\left[ \left(4\sqrt{D^\prime} + 3b + 2 \right)\left(\frac{5b - 2 + 4\sqrt{D^\prime}}{8}\right)^n +\left(4\sqrt{D^\prime} - 3b - 2 \right)\left(\frac{5b - 2 - 4\sqrt{D^\prime}}{8}\right)^n  \right] \\
+&= \frac{1}{2^{-(3+3n)}\sqrt{D^\prime}}\left[ \left(4\sqrt{D^\prime} + 3b + 2 \right)\left(5b - 2 + 4\sqrt{D^\prime}\right)^n +\left(4\sqrt{D^\prime} - 3b - 2 \right)\left(5b - 2 - 4\sqrt{D^\prime}\right)^n  \right],
+\intertext{where}
+D^\prime&= \frac{9b^2}{16} + \frac{3b}{4} -\frac{3}{4}. \qedhere
+\end{align*}
+
+\end{proof}
+\end{document}
