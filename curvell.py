@@ -13,12 +13,24 @@ class CI_finder:
 						"scale": 0.5, 
 						"rho": 0.25,
 						"n_points": 101}
-	def __init__(self, plate_ids, live_count, dead_count, conc):
+
+	def __init__(self, plate_ids, live_count, dead_count, conc, **kwargs):
+		if plate_ids is None or live_count is None or dead_count is None or conc is None:
+			raise ValueError("CI_finder requries plate_ids, live_count, dead_count, and conc values.")
+		elif not (len(plate_ids)== len(live_count) and 
+			len(plate_ids)==len(dead_count) and 
+			len(plate_ids)==len(conc)):
+			raise ValueError("CI_finder requries plate_ids, live_count, dead_count, and conc to all be the same length.")
 		self.plate_ids = plate_ids
 		self.live_count = live_count
 		self.dead_count = dead_count
 		self.conc = conc
 		self.options = self.default_options
+		#values created by calculation
+		self.params = None
+		self.points = None
+		self.plot_quant = None
+
 	def ll3(self, b, probs, conc, sigma = 1000,weibull_param=[2,1]):
 		b0, b1, b3 = b
 		if (b3 <= 1e-10 or b3 > 1. ): return(1e10)
@@ -35,6 +47,7 @@ class CI_finder:
 		if b3 < 1 - 1e-9: 
 			ll += - ((b3/wl)**wk) + (wk-1)*np.log(b3) #+ np.log(wk) - wk*np.log(wl)
 		return(-ll)
+
 	def ll3_grad(self, b, probs, conc,sigma = 1000,weibull_param=[2,1]):
 		b0, b1, b3 = b
 		xi = np.exp(b0+b1*conc)
@@ -48,12 +61,14 @@ class CI_finder:
 		g2 = -b1/(sigma**2) + sum(conc*m) - sum(conc*l)
 		g4 = (wk-1)/b3 - (wk/b3)*((b3/wl)**wk) - sum(probs/d) + sum((1-probs)/b3)
 		return(np.array([-g1,-g2,-g4]))
+
 	def ll2(self, b, probs, conc, sigma = 1000):
 		b0, b1 = b
 		p_sum = sum(probs)
 		p_conc_sum = sum(probs*conc)
 		ll = -(b0**2 + b1**2)/(2*sigma**2) + b0*p_sum + b1*p_conc_sum - sum(np.log(1 + np.exp(b0+b1*conc)))
 		return(-ll)
+
 	def ll2_grad(self, b, probs, conc, sigma = 1000):
 		b0, b1 = b
 		p_sum = sum(probs)
@@ -63,15 +78,17 @@ class CI_finder:
 		g1 = -b0/sigma**2 + sum(probs) - sum(l)
 		g2 = -b1/sigma**2 + sum(conc*probs) - sum(conc*l)
 		return(np.array([-g1,-g2]))
-	def loglogit2(self, b, conc):
-		return 1./(1.+ np.exp(-b[0] - conc * b[1]))
-	def loglogit3(self, b, conc):
-		return b[2]/(1.+ np.exp(b[0] + conc * b[1]))
+
+	def loglogit2(self, b, conc): return 1./(1.+ np.exp(-b[0] - conc * b[1]))
+
+	def loglogit3(self, b, conc): return b[2]/(1.+ np.exp(b[0] + conc * b[1]))
+
 	def ll3_find_EC(params, quantiles):
 		quant2 = np.tile(np.array(quantiles), (len(params),1))
 		params = np.reshape(np.repeat(np.array(ci.params[:,0:2]), len(quantiles)), 
 			(ci.params[:,0:2].shape[0], ci.params[:,0:2].shape[1], len(quantiles)))
 		return (np.log(1./quant2 - 1.)-params[:,0])/params[:,1]
+
 	def fit_curve(self, probs):
 		#TODO: better methods of b estimation
 		#TODO: handle cases where EC50 is not going to be in the data :( 
@@ -107,7 +124,9 @@ class CI_finder:
 			AIC2 = 4 - 2*res2.fun
 			AIC3 = 6 - 2*res3.fun
 			return res2 if AIC2 <= AIC3 else res3
+
 	def bootstrap_CIs(self):
+		if self.params is not None: return
 		#get correlated beta variables
 		beta_probs = corr_beta_vars(self.plate_ids, 
 									self.live_count, 
@@ -124,32 +143,44 @@ class CI_finder:
 			else:
 				self.params[iter_count,0:2] = res.x
 				self.params[iter_count,2] = 1.
+
 	def calculate_curves(self):
+		if self.points is not None: return
 		self.min_conc, self.max_conc = min(self.conc)-1, max(self.conc)+1
 		self.x = np.linspace(self.min_conc, self.max_conc, self.options["n_points"])
 		self.points = np.zeros((len(self.params), self.options["n_points"]))
 		for iter_count, row in enumerate(self.params): self.points[iter_count] = loglogit3(row, self.x)
+	
 	def get_plot_CIs(self, quantiles = [.025, 0.5, 0.975], options=None):
+		if self.plot_quant is not None: return
 		if options: self.update_options(options)
-		self.quantiles = quantiles
 		self.bootstrap_CIs()
 		self.calculate_curves()
-		self.quant = np.quantile(self.points, self.quantiles, interpolation='linear', axis = 0)
+		self.plot_quant = np.quantile(self.points, quantiles, interpolation='linear', axis = 0)
+	
 	def get_EC_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, options=None):
+		if self.params is None: self.bootstrap_CIs()
 		EC = 1-EC
 		EC_vals = ll3_find_EC(self.params, EC)
 		alpha = 1. - CI_val
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
 		EC_val_summary = np.quantile(EC_vals, quantiles, interpolation='linear', axis = 0)
 		return np.transpose(EC_val_summary), 1 - EC
+	
 	def plot_CIs(self, low = .025, line = 0.5, high =  0.975, options=None):
 		self.get_plot_CIs(quantiles = [low, line, high], options=options)
-		plt.fill_between(self.x, self.quant[0], self.quant[2], alpha = 0.5)
-		plt.plot(self.x, self.quant[1], 'r-')
+		plt.fill_between(self.x, self.plot_quant[0], self.plot_quant[2], alpha = 0.5)
+		plt.plot(self.x, self.plot_quant[1], 'r-')
 		plt.plot(self.conc, self.live_count/(self.dead_count + self.live_count), 'g.')
 		plt.show()
-	def update_options(self, options):
+	
+	def update_options(self, options): 
 		for k, v in options.items(): self.options[k] = v
+	
+	def reset_curves(self):
+		self.params = None
+		self.points = None
+		self.plot_quant = None
 
 	
 # ci = CI_finder(plate_ids, live_count, dead_count, conc)
