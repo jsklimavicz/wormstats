@@ -29,4 +29,3 @@ def corr_beta_vars(plate_ids, live_count, dead_count, size = 1, scale = 0.5, rho
 	norm_prob = st.norm.cdf(norm_var)
 	beta_var = st.beta.ppf(norm_prob, dead_count + scale, live_count + scale)
 	return beta_var
-
