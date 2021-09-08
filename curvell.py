@@ -23,7 +23,7 @@ def ll3(b, probs, conc, sigma = 1000,weibull_param=[2,1]):
 	# 	sum(probs*np.log(alpha-b3)) + np.log(b3)*sum((1-probs)) - sum(l)
 	ll = -(b0**2 + b1**2)/(2*(sigma**2)) + sum(probs*np.log(alpha-b3)) + np.log(b3)*sum((1-probs)) - sum(l)
 	if b3 < 1 - 1e-9: 
-		ll += - ((b3/wl)**wk) + (wk-1)*np.log(b3) + np.log(wk) - wk*np.log(wl)
+		ll += - ((b3/wl)**wk) + (wk-1)*np.log(b3) #+ np.log(wk) - wk*np.log(wl)
 	return(-ll)
 
 def ll3_grad(b, probs, conc,sigma = 1000,weibull_param=[2,1]):
@@ -41,35 +41,6 @@ def ll3_grad(b, probs, conc,sigma = 1000,weibull_param=[2,1]):
 	g2 = -b1/(sigma**2) + sum(conc*m) - sum(conc*l)
 	g4 = (wk-1)/b3 - (wk/b3)*((b3/wl)**wk) - sum(probs/d) + sum((1-probs)/b3)
 	return(np.array([-g1,-g2,-g4]))
-
-# def ll3(b, probs, conc, sigma = 1000,beta_param=[2,1]):
-# 	b0 = b[0]
-# 	b1 = b[1]
-# 	b3 = b[2]
-# 	if (b3 <= 0 or b3 >= 1. ): return(1e10)
-# 	xi = np.exp(b0+b1*conc)
-# 	alpha = 1+xi
-# 	l = np.log(alpha)
-# 	if (min(alpha)-b3 <= 0): return(1e10)
-# 	ll = -(b0**2 + b1**2)/(2*sigma**2) + sum(probs*np.log(alpha-b3)) + np.log(b3)*sum((1-probs)) - sum(l)
-# 	if 0 < b3 < 1: 
-# 		ll += (beta_param[0] - 1)*np.log(b3) + (beta_param[1] - 1)*np.log(1-b3) + \
-# 		np.log(gamma(sum(beta_param))) - np.log(gamma(beta_param[0])) - np.log(gamma(beta_param[1]))
-# 	return(-ll)
-
-# def ll3_grad(b, probs, conc,sigma = 1000,beta_param=[2,1]):
-# 	b0 = b[0]
-# 	b1 = b[1]
-# 	b3 = b[2]
-# 	xi = np.exp(b0+b1*conc)
-# 	alpha = 1+xi
-# 	d = (alpha - b3)
-# 	m = probs*xi / d
-# 	l = xi/alpha
-# 	g1 = -b0/sigma**2 +sum(m) - sum(l)
-# 	g2 = -b1/sigma**2 +sum(conc*m) - sum(conc*l)
-# 	g4 =  (beta_param[0] - 1)/(b3) -(beta_param[1] - 1)/(1-b3) - sum(probs/d) + sum(1-probs)/b3
-# 	return(np.array([-g1,-g2,-g4]))
 
 def ll2(b, probs, conc, sigma = 1000):
 	b0 = b[0]
@@ -116,26 +87,32 @@ def fit_curve(probs, conc, curve_type = 'auto', method = 'BFGS'):
 		return minimize(ll2, b2, args = (probs, conc), method = method, jac = ll2_grad)
 	elif curve_type in ["3", "ll3", 3]:
 		b3 = np.array([est_lc50, default_b1, background_mort])
-		return minimize(ll3, b3, args = (probs, conc), method = 'BFGS', jac = ll3_grad)
+		res = minimize(ll3, b3, args = (probs, conc), method = method, jac = ll3_grad)
+		if not res.success:
+			res = minimize(ll3, b3, args = (probs, conc), method = 'Nelder-Mead')
+		return res
 	elif curve_type.lower() in ["best", "aic"]:
 		b2 = np.array([est_lc50, default_b1])
 		res2 = minimize(ll2, b2, args = (probs, conc), method = method, jac = ll2_grad)
 		b3 = np.array([res2.x[0], res2.x[1], background_mort])
-		res3 = minimize(ll3, b3, args = (probs, conc), method = 'BFGS', jac = ll3_grad)
-		AIC2 = 4 - 2*ll3([res2.x[0], res2.x[1], 1.], probs, conc)
+		res3 = minimize(ll3, b3, args = (probs, conc), method = method, jac = ll3_grad)
+		if not res3.success:
+			res3 = minimize(ll3, b3, args = (probs, conc), method = 'Nelder-Mead')
+		AIC2 = 4 - 2*res2.fun
 		AIC3 = 6 - 2*res3.fun
-		print("AIC 2:", AIC2, "AIC3:", AIC3)
+		# print("AIC 2:", AIC2, "AIC3:", AIC3)
+		print("AIC 2:", res2.fun, "AIC3:", res3.fun)
 		return res2 if AIC2 <= AIC3 else res3
 
 
-def MC_fit_curves(plate_ids, live_count, dead_count, conc, bs_iter = 20, curve_type = 'best', method = 'BFGS', scale = 0.5, rho = 0.25):
+def MC_fit_curves(plate_ids, live_count, dead_count, conc, bs_iter = 100, curve_type = 'best', method = 'BFGS', scale = 0.5, rho = 0.25):
 	#get correlated beta variables
 	beta_probs = corr_beta_vars(plate_ids, live_count, dead_count, size = bs_iter, scale = scale, rho = rho)
 	#possibility of having 2 or 3 parameters
 	params = np.zeros((bs_iter, 3))
 	iter_count = 0
 	x = np.linspace(min(conc), max(conc), 101)
-	plt.plot(conc, dead_count/(live_count + dead_count), 'g.')
+	# plt.plot(conc, live_count/(live_count + dead_count), 'g.')
 	for row in beta_probs:
 		# plt.plot(conc, row, '.')
 		res = fit_curve(row, conc, curve_type = curve_type, method = method)
@@ -148,16 +125,16 @@ def MC_fit_curves(plate_ids, live_count, dead_count, conc, bs_iter = 20, curve_t
 		y = loglogit3(params[iter_count], x)
 		plt.plot(x, y)
 		iter_count += 1
-	plt.show()
-	print(params)
+	# plt.show()
+	return params
 	
 
 
 
-plate_ids=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
-conc = np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7])
-live_count = np.array([11, 11, 12, 3, 3, 2, 0, 0, 0, 0, 9, 8, 7, 7, 5, 2, 1, 1, 0, 0, 11, 12, 14, 3, 5, 1, 0, 1, 0, 0, 9, 11, 5, 9, 3, 1, 0, 0, 0, 0])
-dead_count = np.array([5, 5, 8, 17, 14, 15, 14, 15, 18, 15, 5, 6, 5, 9, 10, 14, 18, 17, 19, 13, 4, 4, 6, 12, 10, 14, 13, 12, 19, 19, 4, 3, 10, 6, 11, 18, 14, 15, 16, 11])
-probs = dead_count/(dead_count + live_count)
-b = np.array([-1.2646771, 1.0533963, 0.7197049])
-b = np.array([-1.5646771, 1.1533963, 0.8197049])
+#plate_ids=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
+#conc = np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7])
+#live_count = np.array([11, 11, 12, 3, 3, 2, 0, 0, 0, 0, 9, 8, 7, 7, 5, 2, 1, 1, 0, 0, 11, 12, 14, 3, 5, 1, 0, 1, 0, 0, 9, 11, 5, 9, 3, 1, 0, 0, 0, 0])
+#dead_count = np.array([5, 5, 8, 17, 14, 15, 14, 15, 18, 15, 5, 6, 5, 9, 10, 14, 18, 17, 19, 13, 4, 4, 6, 12, 10, 14, 13, 12, 19, 19, 4, 3, 10, 6, 11, 18, 14, 15, 16, 11])
+#probs = dead_count/(dead_count + live_count)
+#b = np.array([-1.2646771, 1.0533963, 0.7197049])
+#b = np.array([-1.5646771, 1.1533963, 0.8197049])
