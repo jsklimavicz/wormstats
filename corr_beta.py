@@ -27,5 +27,6 @@ def corr_beta_vars(plate_ids, live_count, dead_count, size = 1, scale = 0.5, rho
 	corr_mat = corr_matrix(plate_ids, rho = rho)
 	norm_var = np.random.default_rng().multivariate_normal(np.zeros_like(plate_ids), corr_mat, size = size)
 	norm_prob = st.norm.cdf(norm_var)
-	beta_var = st.beta.cdf(norm_prob, live_count + scale, dead_count + scale)
+	beta_var = st.beta.ppf(norm_prob, dead_count + scale, live_count + scale)
 	return beta_var
+
