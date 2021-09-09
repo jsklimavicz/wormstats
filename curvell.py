@@ -166,7 +166,17 @@ class CI_finder:
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
 		EC_val_summary = np.quantile(EC_vals, quantiles, interpolation='linear', axis = 0)
 		return np.transpose(EC_val_summary), 1 - EC
-	
+
+	def get_EC50_CI(self, CI_val=0.95): return self.get_param_CI(0, CI_val)
+	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val)
+	def get_baseline_mort_CI(self, CI_val=0.95): return self.get_param_CI(2, CI_val)
+
+	def get_param_CI(self, parameter, CI_val):
+		if self.params is None: self.bootstrap_CIs()
+		alpha = 1. - CI_val
+		quantiles = np.array([alpha/2, 1- alpha/2])
+		return np.quantile(self.params[:,parameter], quantiles, interpolation='linear', axis = 0)
+
 	def plot_CIs(self, low = .025, line = 0.5, high =  0.975, options=None):
 		self.get_plot_CIs(quantiles = [low, line, high], options=options)
 		plt.fill_between(self.x, self.plot_quant[0], self.plot_quant[2], alpha = 0.5)
