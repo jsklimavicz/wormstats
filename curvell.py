@@ -152,10 +152,10 @@ class CI_finder:
 		for iter_count, row in enumerate(self.params): self.points[iter_count] = loglogit3(row, self.x)
 	
 	def get_plot_CIs(self, quantiles = [.025, 0.5, 0.975], options=None):
-		if self.plot_quant is not None: return
-		if options: self.update_options(options)
-		self.bootstrap_CIs()
-		self.calculate_curves()
+		if self.plot_quant is None: 
+			if options: self.update_options(options)
+			self.bootstrap_CIs()
+			self.calculate_curves()
 		self.plot_quant = np.quantile(self.points, quantiles, interpolation='linear', axis = 0)
 	
 	def get_EC_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, options=None):
@@ -166,32 +166,31 @@ class CI_finder:
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
 		EC_val_summary = np.quantile(EC_vals, quantiles, interpolation='linear', axis = 0)
 		return np.transpose(EC_val_summary), 1 - EC
-	
+
+	def get_EC50_CI(self, CI_val=0.95): return self.get_param_CI(0, CI_val)
+	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val)
+	def get_baseline_mort_CI(self, CI_val=0.95): return self.get_param_CI(2, CI_val)
+
+	def get_param_CI(self, parameter, CI_val):
+		if self.params is None: self.bootstrap_CIs()
+		alpha = 1. - CI_val
+		quantiles = np.array([alpha/2, 1- alpha/2])
+		return np.quantile(self.params[:,parameter], quantiles, interpolation='linear', axis = 0)
+
 	def plot_CIs(self, low = .025, line = 0.5, high =  0.975, options=None):
 		self.get_plot_CIs(quantiles = [low, line, high], options=options)
 		plt.fill_between(self.x, self.plot_quant[0], self.plot_quant[2], alpha = 0.5)
 		plt.plot(self.x, self.plot_quant[1], 'r-')
 		plt.plot(self.conc, self.live_count/(self.dead_count + self.live_count), 'g.')
-		plt.show()
+		return plt
 	
 	def update_options(self, options): 
 		for k, v in options.items(): self.options[k] = v
 	
 	def reset_curves(self):
+		'''
+		This function clears out the params, points, and CI lines to allow one do new bootstrapping.
+		'''
 		self.params = None
 		self.points = None
 		self.plot_quant = None
-
-	
-# ci = CI_finder(plate_ids, live_count, dead_count, conc)
-# ci.plot_CIs()
-# ci.get_EC_CIs()
-
-
-# plate_ids=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
-# conc = np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7])
-# live_count = np.array([11, 11, 12, 3, 3, 2, 0, 0, 0, 0, 9, 8, 7, 7, 5, 2, 1, 1, 0, 0, 11, 12, 14, 3, 5, 1, 0, 1, 0, 0, 9, 11, 5, 9, 3, 1, 0, 0, 0, 0])
-# dead_count = np.array([5, 5, 8, 17, 14, 15, 14, 15, 18, 15, 5, 6, 5, 9, 10, 14, 18, 17, 19, 13, 4, 4, 6, 12, 10, 14, 13, 12, 19, 19, 4, 3, 10, 6, 11, 18, 14, 15, 16, 11])
-# probs = dead_count/(dead_count + live_count)
-# b = np.array([-1.2646771, 1.0533963, 0.7197049])
-# b = np.array([-1.5646771, 1.1533963, 0.8197049])
