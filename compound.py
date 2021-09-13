@@ -12,9 +12,10 @@ class Compound:
 		for k, v in kwargs.items(): 
 			self.info[k] = v
 		self.curve_data = CI_finder(**self.info)
-	def get_EC_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, options=None):
+	def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method = "HPDR", options=None):
 		if self.curve_data is None: self.fit_data()
-		return self.curve_data.get_EC_CIs(EC = EC, CI_val=CI_val, options=options)
+		p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
+		return p
 	def get_plot(self):
 		self.curve_data.plot_CIs()
 

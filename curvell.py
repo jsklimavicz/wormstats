@@ -7,15 +7,17 @@ from joblib import load, Parallel, delayed
 import matplotlib.pyplot as plt
 import warnings
 from statistics import median
+from sklearn.neighbors import KernelDensity
 
 def default_params_dict():
-	param_dict = {"bs_iter": 100, 
+	param_dict = {"bs_iter": 500, 
 						# "curve_type": 'll3', 
 						"curve_type": 'best', 
 						"method": 'BFGS', 
 						"scale": 0.1, 
 						"rho": 0.25,
-						"n_points": 101}
+						"n_points": 101,
+						"CI_method": "HPDR"}
 	return param_dict
 
 class CI_finder:
@@ -168,14 +170,53 @@ class CI_finder:
 			self.calculate_curves()
 		self.plot_quant = np.quantile(self.points, quantiles, interpolation='linear', axis = 0)
 	
-	def get_EC_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, options=None):
+	def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method= "HPDR", *args, **kwargs):
 		if self.params is None: self.bootstrap_CIs()
 		EC = 1-EC
 		EC_vals = self.ll3_find_EC(EC)
 		alpha = 1. - CI_val
+		return self.get_HPDR_CIs(EC_vals, alpha, *args, **kwargs) if CI_method == "HPDR" else self.get_EC_CIs(EC_vals, alpha, *args, **kwargs) 
+
+
+	def get_EC_CIs(self, EC_vals, alpha, *args, **kwargs):
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
 		EC_val_summary = np.quantile(EC_vals, quantiles, interpolation='linear', axis = 0)
-		return np.transpose(EC_val_summary), 1 - EC
+		return np.transpose(EC_val_summary) if len(EC_val_summary.shape)>1 else EC_val_summary
+
+	def EC_kernel(self, EC_val_list):
+		return KernelDensity(kernel ='gaussian', bandwidth = 0.5).fit(EC_val_list)
+
+	def errfn(self, p, alpha, kde):
+		from scipy import integrate
+		def fn(x):
+			x = np.array(x).reshape(1, -1)
+			pdf = np.exp(kde.score_samples(x))
+			return pdf if pdf > p else 0
+
+		lb = min(self.conc) - 10
+		ub = max(self.conc) + 10
+		prob = integrate.quad(fn, lb, ub, limit=200)[0]
+		return (prob + alpha - 1.)**2
+
+	def get_HPDR_CIs(self, EC_vals, alpha, *args, **kwargs):
+		from scipy.optimize import fmin
+		for val_iter in EC_vals.T:
+			val = np.reshape(val_iter, (len(val_iter),1))
+			kde = self.EC_kernel(val)
+			p = fmin(self.errfn, x0=0, args = (alpha, kde))
+		exit()
+
+	def get_HPDR_CIs(self, EC_vals, alpha, *args, **kwargs):
+		from scipy.optimize import fmin
+		for val_iter in EC_vals.T:
+			val = np.reshape(val_iter, (len(val_iter),1))
+			kde = self.EC_kernel(val)
+			p = fmin(self.errfn, x0=0, args = (alpha, kde))
+		exit()
+
+
+
+
 
 	def get_EC50_CI(self, CI_val=0.95): return self.get_param_CI(0, CI_val)
 	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val)
@@ -205,3 +246,29 @@ class CI_finder:
 		self.params = None
 		self.points = None
 		self.plot_quant = None
+
+
+
+
+def errfn(p, alpha, kde):
+	from scipy import integrate
+	def fn(x):
+		x = np.array(x).reshape(1, -1)
+		pdf = np.exp(kde.score_samples(x))
+		return pdf if pdf > p else 0
+	def get_bounds():
+		def fn(x):
+			x = np.array(x).reshape(1, -1)
+			pdf = np.exp(kde.score_samples(x))
+			return pdf - p
+		lb, ub = -10, 10
+		lb = fmin(fn, x0=lb)
+		ub = fmin(fn, x0=ub)
+		return lb, ub
+	lb, ub = get_bounds()
+	prob = integrate.quad(fn, lb, ub, limit=200)[0]
+	return (prob + alpha - 1.)**2
+
+
+def get_HPDR_CIs(kde, alpha, *args, **kwargs):
+	return fmin(errfn, x0=0, args = (alpha, kde))

@@ -36,9 +36,12 @@ class MerlinAnalyzer:
 							plate_ids = cmpd_data["Plate"].tolist(),
 							reps = cmpd_data["Rep"].tolist())
 			cmpd.fit_data()
-			EC = cmpd.get_EC_CIs()
-			cmpd.curve_data.plot_CIs()
+			EC = cmpd.get_CIs(CI_method = "equal_tail")
 			print(EC)
+			# EC = cmpd.get_CIs(CI_method = "HPDR")
+			# print(EC)
+			cmpd.curve_data.plot_CIs()
+			
 
 	def read_old_data(self, filename):
 		return
