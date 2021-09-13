@@ -5,26 +5,48 @@ import matplotlib.pyplot as plt
 
 class Compound:
 	def __init__(self, **kwargs):
-		self.info = {"name": None,
-				"ids": None,
-				"test_dates": None,
-				"max_conc": None,
-				"n_trials": None, 
-				"conc": None,
-				"live_count": None,
-				"dead_count": None,
-				"plate_ids": None}
+		self.info = empty_cpmd_dict()
 		for k, v in kwargs.items(): self.info[k] = v
 		self.curve_data = None
-		self.data = None
 	def fit_data(self, **kwargs):
-		for k, v in kwargs.items(): self.info[k] = v
+		for k, v in kwargs.items(): 
+			self.info[k] = v
 		self.curve_data = CI_finder(**self.info)
 	def get_EC_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, options=None):
 		if self.curve_data is None: self.fit_data()
 		return self.curve_data.get_EC_CIs(EC = EC, CI_val=CI_val, options=options)
 	def get_plot(self):
 		self.curve_data.plot_CIs()
+
+	def __iadd__(self, other):
+		for k, v in self.info.items(): 
+			if k == "name": pass
+			elif k == "conc":
+				self.info[k] = max(self.info[k], other.info[k])
+			elif k == "n_trials":
+				self.info[k] += 1
+			else:
+				self.info[k] = [*self.info[k], *other.info[k]]
+		self.curve_data = None
+
+
+def empty_cpmd_dict():
+	return {"name": None, #name of the compound
+				"ids": None, #list of ID codes associated with the compound, of length number of data points.
+				"test_dates": None, #list of testing dates associated with the compound, of length number of data points.
+				"max_conc": None, #maximum concentration of all tests. 
+				"n_trials": None, #Number of distinct complete reps. 
+				"column_IDs": None, 
+				"row_IDs": None, 
+				"conc": None, #list of testing dates associated with the compound, of length number of data points.
+				"live_count": None, #list of testing dates associated with the compound, of length number of data points.
+				"dead_count": None,
+				"plate_ids": None,
+				"reps": None,
+				"unique_plate_ids": None}
+
+
+
 
 
 

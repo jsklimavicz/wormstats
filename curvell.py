@@ -5,14 +5,21 @@ import numpy as np
 from corr_beta import corr_beta_vars
 from joblib import load, Parallel, delayed
 import matplotlib.pyplot as plt
+import warnings
+from statistics import median
 
-class CI_finder:
-	default_options = {"bs_iter": 1000, 
-						"curve_type": 'll3', 
+def default_params_dict():
+	param_dict = {"bs_iter": 100, 
+						# "curve_type": 'll3', 
+						"curve_type": 'best', 
 						"method": 'BFGS', 
-						"scale": 0.5, 
+						"scale": 0.1, 
 						"rho": 0.25,
 						"n_points": 101}
+	return param_dict
+
+class CI_finder:
+	default_options = default_params_dict()
 
 	def __init__(self, plate_ids, live_count, dead_count, conc, **kwargs):
 		if plate_ids is None or live_count is None or dead_count is None or conc is None:
@@ -83,16 +90,23 @@ class CI_finder:
 
 	def loglogit3(self, b, conc): return b[2]/(1.+ np.exp(b[0] + conc * b[1]))
 
-	def ll3_find_EC(params, quantiles):
-		quant2 = np.tile(np.array(quantiles), (len(params),1))
-		params = np.reshape(np.repeat(np.array(ci.params[:,0:2]), len(quantiles)), 
-			(ci.params[:,0:2].shape[0], ci.params[:,0:2].shape[1], len(quantiles)))
+	def ll3_find_EC(self, quantiles):
+		quant2 = np.tile(np.array(quantiles), (len(self.params),1))
+		params = np.reshape(np.repeat(np.array(self.params[:,0:2]), len(quantiles)), 
+			(self.params[:,0:2].shape[0], self.params[:,0:2].shape[1], len(quantiles)))
 		return (np.log(1./quant2 - 1.)-params[:,0])/params[:,1]
 
 	def fit_curve(self, probs):
 		#TODO: better methods of b estimation
 		#TODO: handle cases where EC50 is not going to be in the data :( 
-		default_b1 = -1.
+		def fit_ll3(b3, probs):
+			with warnings.catch_warnings():
+				warnings.simplefilter("ignore")
+				res = minimize(self.ll3, b3, args = (probs, self.conc), method = self.options["method"], jac = self.ll3_grad)
+			if not res.success:
+				res = minimize(self.ll3, b3, args = (probs, self.conc), method = 'Nelder-Mead')
+			return res
+		default_b1 = median(self.conc)
 		n_vals = round(0.2 * len(self.conc))
 		idx = np.argpartition(self.conc, n_vals)
 		background_mort = sum(probs[idx[:n_vals]])/n_vals
@@ -107,20 +121,16 @@ class CI_finder:
 		est_lc50 = self.conc[high_idx[-1]]
 		if self.options["curve_type"].lower() in ["2", "ll2", 2]:
 			b2 = np.array([est_lc50, default_b1])
-			return minimize(ll2, b2, args = (probs, self.conc), method = self.options["method"], jac = ll2_grad)
+			return minimize(self.ll2, b2, args = (probs, self.conc), method = self.options["method"], jac = self.ll2_grad)
 		elif self.options["curve_type"].lower() in ["3", "ll3", 3]:
 			b3 = np.array([est_lc50, default_b1, background_mort])
-			res = minimize(ll3, b3, args = (probs, self.conc), method = self.options["method"], jac = ll3_grad)
-			if not res.success:
-				res = minimize(ll3, b3, args = (probs, self.conc), method = 'Nelder-Mead')
+			res = fit_ll3(b3, probs)
 			return res
 		elif self.options["curve_type"].lower() in ["best", "aic"]:
 			b2 = np.array([est_lc50, default_b1])
-			res2 = minimize(ll2, b2, args = (probs, self.conc), method = self.options["method"], jac = ll2_grad)
+			res2 = minimize(self.ll2, b2, args = (probs, self.conc), method = self.options["method"], jac = self.ll2_grad)
 			b3 = np.array([res2.x[0], res2.x[1], background_mort])
-			res3 = minimize(ll3, b3, args = (probs, self.conc), method = self.options["method"], jac = ll3_grad)
-			if not res3.success:
-				res3 = minimize(ll3, b3, args = (probs, self.conc), method = 'Nelder-Mead')
+			res3 = fit_ll3(b3, probs)
 			AIC2 = 4 - 2*res2.fun
 			AIC3 = 6 - 2*res3.fun
 			return res2 if AIC2 <= AIC3 else res3
@@ -149,7 +159,7 @@ class CI_finder:
 		self.min_conc, self.max_conc = min(self.conc)-1, max(self.conc)+1
 		self.x = np.linspace(self.min_conc, self.max_conc, self.options["n_points"])
 		self.points = np.zeros((len(self.params), self.options["n_points"]))
-		for iter_count, row in enumerate(self.params): self.points[iter_count] = loglogit3(row, self.x)
+		for iter_count, row in enumerate(self.params): self.points[iter_count] = self.loglogit3(row, self.x)
 	
 	def get_plot_CIs(self, quantiles = [.025, 0.5, 0.975], options=None):
 		if self.plot_quant is None: 
@@ -161,7 +171,7 @@ class CI_finder:
 	def get_EC_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, options=None):
 		if self.params is None: self.bootstrap_CIs()
 		EC = 1-EC
-		EC_vals = ll3_find_EC(self.params, EC)
+		EC_vals = self.ll3_find_EC(EC)
 		alpha = 1. - CI_val
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
 		EC_val_summary = np.quantile(EC_vals, quantiles, interpolation='linear', axis = 0)
@@ -182,6 +192,7 @@ class CI_finder:
 		plt.fill_between(self.x, self.plot_quant[0], self.plot_quant[2], alpha = 0.5)
 		plt.plot(self.x, self.plot_quant[1], 'r-')
 		plt.plot(self.conc, self.live_count/(self.dead_count + self.live_count), 'g.')
+		plt.show()
 		return plt
 	
 	def update_options(self, options): 
