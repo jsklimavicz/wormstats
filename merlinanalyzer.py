@@ -18,8 +18,20 @@ class MerlinAnalyzer:
 
 
 	def read_new_data(self, filename):
+		new_data = pd.read_csv(filename, header = 0)
+		cmpd_data = new_data[new_data["ppm"] != 0]
+		ctrl_data = new_data[new_data["ppm"] == 0]
+		ctrl_live_sum = sum(np.array(ctrl_data["Live"].tolist()))
+		ctrl_dead_sum = sum(np.array(ctrl_data["Dead"].tolist()))
+		ctrl_ave_mort = (ctrl_dead_sum *1.)/(ctrl_dead_sum + ctrl_live_sum *1.)
+		cmpd_data["ctrl_mort"] = ctrl_ave_mort
+		self.new_data = cmpd_data
+
+			
+	def read_key(self, filename):
 		this_data = pd.read_csv(filename, header = 0)
-		this_data = this_data[this_data["ppm"] != 0]
+
+	def process_compounds(self):
 		for cmpd_id in this_data["Ref ID"].unique():
 			print(cmpd_id)
 			cmpd_data = this_data[this_data["Ref ID"] == cmpd_id]
@@ -41,7 +53,7 @@ class MerlinAnalyzer:
 			# EC = cmpd.get_CIs(CI_method = "HPDR")
 			# print(EC)
 			cmpd.curve_data.plot_CIs()
-			
+		return
 
 	def read_old_data(self, filename):
 		return
