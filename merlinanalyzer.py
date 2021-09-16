@@ -1,69 +1,151 @@
 import numpy as np
+import os
+import pandas as pd
 from curvell import CI_finder
 import matplotlib.pyplot as plt
+from compound import Compound
+import math
+from copy import deepcopy
+import pickle
+import hashlib
+import hmac
 
+class MerlinAnalyzer:
 
-class Compound:
+	archivefilename = "merlin_bioassay_archive_data.pickle"
+	picklesha1hash = ".picklehash"
+
 	def __init__(self, *args, **kwargs):
-		self.data = empty_cpmd_dict()
-		for k, v in kwargs.items(): self.data[k] = v
-		self.curve_data = None
-		self.plot = None
-	def fit_data(self, **kwargs):
-		for k, v in kwargs.items(): 
-			self.data[k] = v
-		self.curve_data = CI_finder(**self.data)
-	def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method = "HPDR", options=None):
-		if self.curve_data is None: self.fit_data()
-		p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
-		return p
-	def plot_curve(self):
-		self.plot = self.curve_data.plot_CIs()
-		return self.plot
+		self.cmpd_data = {}
 
-	def __add__(self, other):
-		for k, v in self.data.items(): 
-			if k == "name": pass
-			elif k == "max_conc":
-				self.data[k] = max(self.data[k], other.data[k])
-			elif k == "n_trials":
-				self.data[k] += 1
-			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
-				self.data[k] = np.array([*self.data[k], *other.data[k]])
-			else:
-				self.data[k] = [*self.data[k], *other.data[k]]
-		return Compound(**self.data)
+	def column_name_modifier(self, filename):
+		new_data = pd.read_csv(filename, header = 0)
+		column_names = list(new_data.columns)
+		new_col_names = {}
+		for col_name in column_names:
+			if col_name.lower() in ["alive", 'live', 'living']: new_col_names[col_name] = "Live"
+			elif col_name.lower() in ["dead"]: new_col_names[col_name] = "Dead"
+			elif col_name.lower() in ["total", 'count', 'sum']: new_col_names[col_name] = "Count"
+			elif col_name.lower() in ["ref.id", 'ref id', 'ref', 'id']: new_col_names[col_name] = "ID"
+			elif 'col' in col_name.lower(): new_col_names[col_name] = "Column"
+			elif 'row' in col_name.lower(): new_col_names[col_name] = "Row"
+			elif col_name.lower() in ["ppm", "conc", "concentration"]: new_col_names[col_name] = "Conc"
+			elif col_name.lower() in ["plate"]: new_col_names[col_name] = "Plate"
+			elif col_name.lower() in ["rep"]: new_col_names[col_name] = "Rep"
+			elif col_name.lower() in ["class"]: new_col_names[col_name] = "Class"
+			elif col_name.lower() in ["date", 'day']: new_col_names[col_name] = "Date"
+			else: new_col_names[col_name] = col_name
+		new_data.rename(columns=new_col_names, inplace=True)
+		return new_data
 
-	def __sub__(self, uid_list):
+	def read_new_data(self, filename, key_file):
+		new_data = self.column_name_modifier(filename)
+		cmpd_data = deepcopy(new_data[new_data["Conc"] != 0])
+		ctrl_data = new_data[new_data["Conc"] == 0]
+		ctrl_live_sum = sum(np.array(ctrl_data["Live"].tolist()))
+		ctrl_dead_sum = sum(np.array(ctrl_data["Dead"].tolist()))
+		ctrl_ave_mort = (ctrl_dead_sum *1.)/(ctrl_dead_sum + ctrl_live_sum *1.)
+		cmpd_data["ctrl_mort"] = ctrl_ave_mort
+		if key_file is not None: key = self.read_key(key_file)
+		cmpd_data = cmpd_data.merge(key, how='left', on='ID')
+		return self.process_compounds(cmpd_data)
+
+	def read_key(self, filename):
+		return self.column_name_modifier(filename)[["Compound", "ID", "Class"]]
+		
+	def read_archive(self, filepath):
+		with open(os.path.join(filepath, self.picklesha1hash), 'r') as file:
+			pickle_hash = file.read().strip()
+		with open(os.path.join(filepath, self.archivefilename), 'rb') as file:
+			pickled_data = file.read()
+		digest =  hmac.new(b'shared-key', pickled_data, hashlib.sha1).hexdigest()
+		if pickle_hash == digest:
+			unpickled_data = pickle.loads(pickled_data)
+			return unpickled_data
+		else:
+			print('Pickled data as been compromised. Old data cannot be loaded.')
 
 
-	def remove_duplicates(self, other):
-		dup_uniqueIDs = [uid for uid in other.data["unique_plate_ids"] if uid in self.data["unique_plate_ids"]]
-		if len(dup_uniqueIDs) > 0: #then duplicates exist
-			dup_loc = [i for i, x in enumerate(other.data["unique_plate_ids"]) if x in dup_uniqueIDs]
-			if len(dup_loc) == len(self.data["unique_plate_ids"]): return None #all values are duplicates
+	def merge_old_new(self, new_datafile, archive_path, key_file):
+		if os.path.exists(os.path.join(archive_path,self.archivefilename)): 
+			self.cmpd_data = self.read_archive(archive_path)
 
+		if new_datafile is not None:
+			new_cmpd_dict = self.read_new_data(new_datafile, key_file)
+			#merge
+			for k, v, in new_cmpd_dict.items():
+				if k in self.cmpd_data: self.cmpd_data[k] = self.cmpd_data[k] + new_cmpd_dict[k]
+				else: self.cmpd_data[k] = v
+				v.test_print()
+				self.cmpd_data[k].test_print()
 
-	def test_print(self):
-		print(self.data["name"])
-		for k, v in self.data.items(): 
-			print("      ", k, ": ", "(", type(v), ")", v, sep = "")
-		if self.curve_data is not None: print("Curve data found.")
-		if self.plot is not None: print("Plot found.")
+	def save_archive(self, filepath, *args, **kwargs):
+		pickle_data = pickle.dumps(self.cmpd_data)
+		digest =  hmac.new(b'shared-key', pickle_data, hashlib.sha1).hexdigest()
+		header = '%s' % (digest)
+		with open(os.path.join(filepath, self.picklesha1hash), 'w') as file:
+			file.write(header)
+		with open(os.path.join(filepath, self.archivefilename), 'wb') as file:
+			file.write(pickle_data)
+		
+	def process_compounds(self, new_data, *args, **kwargs):
+		new_compound_dict = {}
+		for cmpd_id in new_data["Compound"].unique():
+			cmpd_data = new_data[new_data["Compound"] == cmpd_id].copy()
+			unique_ids = ["_".join([x,str(y),str(z)]) for x,y,z in zip(cmpd_data["Date"].tolist(), cmpd_data["Plate"].tolist(), cmpd_data["Row"].tolist())]
+			new_compound_dict[cmpd_id] = Compound(name = cmpd_id, 
+							ids = cmpd_id, 
+							test_dates = cmpd_data["Date"].unique(),
+							max_conc = max(cmpd_data["Conc"].tolist()),
+							n_trials = len(cmpd_data["Row"].unique()),
+							column_IDs = cmpd_data["Column"].tolist(),
+							row_IDs = cmpd_data["Row"].tolist(),
+							conc = np.log(np.array(cmpd_data["Conc"].tolist()))/math.log(2),
+							live_count = np.array(cmpd_data["Live"].tolist()),
+							dead_count = np.array(cmpd_data["Dead"].tolist()),
+							plate_ids = cmpd_data["Plate"].tolist(),
+							reps = cmpd_data["Rep"].tolist(),
+							ctrl_mort = np.array(cmpd_data["ctrl_mort"].tolist()),
+							unique_plate_ids = unique_ids,
+							*args, **kwargs)
+		return new_compound_dict
 
+	def save_csv(self, filename, *args, **kwargs):
+		return
 
-def empty_cpmd_dict():
-	return {"name": None, #name of the compound
-				"ids": None, #list of ID codes associated with the compound, of length number of data points.
-				"test_dates": None, #list of testing dates associated with the compound, of length number of data points.
-				"max_conc": None, #maximum concentration of all tests. 
-				"n_trials": None, #Number of distinct complete reps. 
-				"column_IDs": None, 
-				"row_IDs": None, 
-				"conc": None, #list of testing dates associated with the compound, of length number of data points.
-				"live_count": None, #list of testing dates associated with the compound, of length number of data points.
-				"dead_count": None,
-				"plate_ids": None,
-				"reps": None,
-				"ctrl_mort": None,
-				"unique_plate_ids": None}
+	def save_plots(self, image_dir, *args, **kwargs):
+		return
+
+	def compare_LC(self, cmpd1, cmpd2, LCval = 50, CI = 0.95, *args, **kwargs):
+		return
+
+	def full_process(self, 
+						new_datafile = None, 
+						key_file = None,
+						csv_outfile = None, 
+						archive_path = None,
+						image_dir = None, 
+						*args, 
+						**kwargs):
+
+		self.merge_old_new(new_datafile, archive_path, key_file)
+		# self.process_compounds(*args, **kwargs)
+
+		for cmpd_name, cmpd in self.cmpd_data.items():
+			print(cmpd.data["name"])
+			cmpd.fit_data()
+			EC = cmpd.get_CIs(CI_method = "equal_tail")
+			print(EC)
+		# # EC = cmpd.get_CIs(CI_method = "HPDR")
+		# # print(EC)
+			ax = cmpd.plot_curve()
+			# plt.show()
+
+		if csv_outfile: self.save_csv(csv_outfile, *args, **kwargs)
+		if archive_path: self.save_archive(archive_path, *args, **kwargs)
+		if image_dir: self.save_plots(image_dir, *args, **kwargs)
+
+if __name__ == "__main__":
+	MA = MerlinAnalyzer()
+	MA.full_process(new_datafile = "./test.csv", key_file = "./key.csv", archive_path=".")
+
