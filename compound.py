@@ -4,34 +4,42 @@ import matplotlib.pyplot as plt
 
 
 class Compound:
-	def __init__(self, **kwargs):
-		self.info = empty_cpmd_dict()
-		for k, v in kwargs.items(): self.info[k] = v
+	def __init__(self, *args, **kwargs):
+		self.data = empty_cpmd_dict()
+		for k, v in kwargs.items(): self.data[k] = v
 		self.curve_data = None
+		self.plot = None
 	def fit_data(self, **kwargs):
 		for k, v in kwargs.items(): 
-			self.info[k] = v
-		self.curve_data = CI_finder(**self.info)
+			self.data[k] = v
+		self.curve_data = CI_finder(**self.data)
 	def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method = "HPDR", options=None):
 		if self.curve_data is None: self.fit_data()
 		p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
 		return p
-	def get_plot(self):
-		ax = self.curve_data.plot_CIs()
-		plt.show()
+	def plot_curve(self):
+		self.plot = self.curve_data.plot_CIs()
+		return self.plot
 
-	def __iadd__(self, other):
-		for k, v in self.info.items(): 
+	def __add__(self, other):
+		for k, v in self.data.items(): 
 			if k == "name": pass
 			elif k == "max_conc":
-				self.info[k] = max(self.info[k], other.info[k])
+				self.data[k] = max(self.data[k], other.data[k])
 			elif k == "n_trials":
-				self.info[k] += 1
+				self.data[k] += 1
 			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
-				self.info[k] = numpy.concatenate(self.info[k], other.info[k])
+				self.data[k] = np.array([*self.data[k], *other.data[k]])
 			else:
-				self.info[k] = [*self.info[k], *other.info[k]]
-		self.curve_data = None
+				self.data[k] = [*self.data[k], *other.data[k]]
+		return Compound(**self.data)
+
+	def test_print(self):
+		print(self.data["name"])
+		for k, v in self.data.items(): 
+			print("      ", k, ": ", "(", type(v), ")", v, sep = "")
+		if self.curve_data is not None: print("Curve data found.")
+		if self.plot is not None: print("Plot found.")
 
 
 def empty_cpmd_dict():
@@ -49,16 +57,3 @@ def empty_cpmd_dict():
 				"reps": None,
 				"ctrl_mort": None,
 				"unique_plate_ids": None}
-
-
-
-
-
-
-# plate_ids=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
-# conc = np.array([-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7])
-# live_count = np.array([11, 11, 12, 3, 3, 2, 0, 0, 0, 0, 9, 8, 7, 7, 5, 2, 1, 1, 0, 0, 11, 12, 14, 3, 5, 1, 0, 1, 0, 0, 9, 11, 5, 9, 3, 1, 0, 0, 0, 0])
-# dead_count = np.array([5, 5, 8, 17, 14, 15, 14, 15, 18, 15, 5, 6, 5, 9, 10, 14, 18, 17, 19, 13, 4, 4, 6, 12, 10, 14, 13, 12, 19, 19, 4, 3, 10, 6, 11, 18, 14, 15, 16, 11])
-# ch = Compound(name="malathion", id="1036-14A", conc=conc, live_count=live_count, plate_ids=plate_ids, dead_count=dead_count)
-# ch.fit_data()
-# ch.get_EC_CIs()
