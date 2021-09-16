@@ -17,15 +17,18 @@ class Compound:
 		p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
 		return p
 	def get_plot(self):
-		self.curve_data.plot_CIs()
+		ax = self.curve_data.plot_CIs()
+		plt.show()
 
 	def __iadd__(self, other):
 		for k, v in self.info.items(): 
 			if k == "name": pass
-			elif k == "conc":
+			elif k == "max_conc":
 				self.info[k] = max(self.info[k], other.info[k])
 			elif k == "n_trials":
 				self.info[k] += 1
+			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
+				self.info[k] = numpy.concatenate(self.info[k], other.info[k])
 			else:
 				self.info[k] = [*self.info[k], *other.info[k]]
 		self.curve_data = None
@@ -44,6 +47,7 @@ def empty_cpmd_dict():
 				"dead_count": None,
 				"plate_ids": None,
 				"reps": None,
+				"ctrl_mort": None,
 				"unique_plate_ids": None}
 
 
