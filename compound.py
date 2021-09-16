@@ -34,6 +34,16 @@ class Compound:
 				self.data[k] = [*self.data[k], *other.data[k]]
 		return Compound(**self.data)
 
+	def __sub__(self, uid_list):
+
+
+	def remove_duplicates(self, other):
+		dup_uniqueIDs = [uid for uid in other.data["unique_plate_ids"] if uid in self.data["unique_plate_ids"]]
+		if len(dup_uniqueIDs) > 0: #then duplicates exist
+			dup_loc = [i for i, x in enumerate(other.data["unique_plate_ids"]) if x in dup_uniqueIDs]
+			if len(dup_loc) == len(self.data["unique_plate_ids"]): return None #all values are duplicates
+
+
 	def test_print(self):
 		print(self.data["name"])
 		for k, v in self.data.items(): 
