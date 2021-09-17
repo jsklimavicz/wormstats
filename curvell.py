@@ -12,20 +12,20 @@ from sklearn.neighbors import KernelDensity
 from merlin_grapher import MerlinGrapher
 
 def default_params_dict():
-	param_dict = {"bs_iter": 500, 
-						# "curve_type": 'll3', 
-						"curve_type": 'best', 
-						"method": 'BFGS', 
-						"scale": 0.1, 
-						"rho": -0.1,
-						"n_points": 151,
-						"CI_method": "HPDR"}
+	param_dict = {"BOOTSTRAP_ITERS": 500, 
+						# "CURVE_TYPE": 'll3', 
+						"CURVE_TYPE": 'best', 
+						"FIT_METHOD": 'BFGS', 
+						"SCALE": 0.1, 
+						"RHO": 0.1,
+						"N_POINTS": 151,
+						"CI_METHOD": "HPDR"}
 	return param_dict
 
 class CI_finder:
 	default_options = default_params_dict()
 
-	def __init__(self, plate_ids, live_count, dead_count, conc, **kwargs):
+	def __init__(self, plate_ids, live_count, dead_count, conc, options = None, **kwargs):
 		if plate_ids is None or live_count is None or dead_count is None or conc is None:
 			raise ValueError("CI_finder requries plate_ids, live_count, dead_count, and conc values.")
 		elif not (len(plate_ids)== len(live_count) and 
@@ -37,6 +37,8 @@ class CI_finder:
 		self.dead_count = dead_count
 		self.conc = conc
 		self.options = self.default_options
+		if options:
+			for k, v in options.items(): self.options[k] = v
 		#values created by calculation
 		self.params = None
 		self.points = None
@@ -106,7 +108,7 @@ class CI_finder:
 		def fit_ll3(b3, probs):
 			with warnings.catch_warnings():
 				warnings.simplefilter("ignore")
-				res = minimize(self.ll3, b3, args = (probs, self.conc), method = self.options["method"], jac = self.ll3_grad)
+				res = minimize(self.ll3, b3, args = (probs, self.conc), method = self.options["FIT_METHOD"], jac = self.ll3_grad)
 			if not res.success:
 				res = minimize(self.ll3, b3, args = (probs, self.conc), method = 'Nelder-Mead')
 			return res
@@ -115,24 +117,24 @@ class CI_finder:
 		idx = np.argpartition(self.conc, n_vals)
 		background_mort = sum(probs[idx[:n_vals]])/n_vals
 		med = background_mort/2.
-		if self.options["curve_type"].lower() == 'auto':
+		if self.options["CURVE_TYPE"].lower() == 'auto':
 			if background_mort > 0.15:
-				self.options["curve_type"] = "ll3"
+				self.options["CURVE_TYPE"] = "ll3"
 			else:
-				self.options["curve_type"] = "ll2"
+				self.options["CURVE_TYPE"] = "ll2"
 				med = 0.5
 		high_idx = np.where(probs > med)[0]
 		est_lc50 = self.conc[high_idx[-1]]
-		if self.options["curve_type"].lower() in ["2", "ll2", 2]:
+		if self.options["CURVE_TYPE"].lower() in ["2", "ll2", 2]:
 			b2 = np.array([est_lc50, default_b1])
-			return minimize(self.ll2, b2, args = (probs, self.conc), method = self.options["method"], jac = self.ll2_grad)
-		elif self.options["curve_type"].lower() in ["3", "ll3", 3]:
+			return minimize(self.ll2, b2, args = (probs, self.conc), method = self.options["FIT_METHOD"], jac = self.ll2_grad)
+		elif self.options["CURVE_TYPE"].lower() in ["3", "ll3", 3]:
 			b3 = np.array([est_lc50, default_b1, background_mort])
 			res = fit_ll3(b3, probs)
 			return res
-		elif self.options["curve_type"].lower() in ["best", "aic"]:
+		elif self.options["CURVE_TYPE"].lower() in ["best", "aic"]:
 			b2 = np.array([est_lc50, default_b1])
-			res2 = minimize(self.ll2, b2, args = (probs, self.conc), method = self.options["method"], jac = self.ll2_grad)
+			res2 = minimize(self.ll2, b2, args = (probs, self.conc), method = self.options["FIT_METHOD"], jac = self.ll2_grad)
 			b3 = np.array([res2.x[0], res2.x[1], background_mort])
 			res3 = fit_ll3(b3, probs)
 			AIC2 = 4 - 2*res2.fun
@@ -145,11 +147,13 @@ class CI_finder:
 		beta_probs = corr_beta_vars(self.plate_ids, 
 									self.live_count, 
 									self.dead_count, 
-									size = self.options["bs_iter"], 
-									scale = self.options["scale"], 
-									rho = self.options["rho"])
+									size = self.options["BOOTSTRAP_ITERS"], 
+									scale = self.options["SCALE"], 
+									rho = self.options["RHO"])
+		#calculate point data points while we have the beta parameters. 
+		self.get_point_error_bars(beta_probs)
 		#possibility of having 2 or 3 parameters
-		self.params = np.zeros((self.options["bs_iter"], 3))
+		self.params = np.zeros((self.options["BOOTSTRAP_ITERS"], 3))
 		dict_list = Parallel(n_jobs=-1)(delayed(self.fit_curve)(row) for row in beta_probs)
 		for iter_count, res in enumerate(dict_list):
 			if len(res.x) == 3:
@@ -158,12 +162,20 @@ class CI_finder:
 				self.params[iter_count,0:2] = res.x
 				self.params[iter_count,2] = 1.
 
+	def get_point_error_bars(self, beta_probs):
+		lb = (1 - self.options["ERROR_BAR_CI"])/2.
+		ub = 1-lb
+		errors = np.quantile(beta_probs, [ub, lb], interpolation='linear', axis = 0)
+		probs = self.dead_count / (self.dead_count+self.live_count)
+		probs = np.tile(np.array(probs), (2,1))
+		self.error_bars = np.abs(errors-probs)
+
 	def calculate_curves(self):
 		if self.points is not None: return
 		self.min_conc, self.max_conc = min(self.conc)-1, max(self.conc)+1
 		lb, ub = math.floor(self.min_conc), math.ceil(self.max_conc)
-		self.x = np.linspace(lb-1, ub+1, self.options["n_points"])
-		self.points = np.zeros((len(self.params), self.options["n_points"]))
+		self.x = np.linspace(lb-1, ub+1, self.options["N_POINTS"])
+		self.points = np.zeros((len(self.params), self.options["N_POINTS"]))
 		for iter_count, row in enumerate(self.params): self.points[iter_count] = self.loglogit3(row, self.x)
 		self.find_r2()
 		print(self.r2)
@@ -184,12 +196,13 @@ class CI_finder:
 			self.calculate_curves()
 		self.plot_quant = np.quantile(self.points, quantiles, interpolation='linear', axis = 0)
 	
-	def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method= "HPDR", *args, **kwargs):
+	def get_CIs(self, **kwargs):
 		if self.params is None: self.bootstrap_CIs()
-		EC = 1-EC
-		EC_vals = self.ll3_find_EC(EC)
-		alpha = 1. - CI_val
-		return self.get_HPDR_CIs(EC_vals, alpha, *args, **kwargs) if CI_method == "HPDR" else self.get_EC_CIs(EC_vals, alpha, *args, **kwargs) 
+		print(kwargs["LC_VALUES"])
+		LC_VALUES = 1-kwargs["LC_VALUES"]
+		EC_vals = self.ll3_find_EC(LC_VALUES)
+		alpha = 1. - kwargs["LC_CI"]
+		return self.get_HPDR_CIs(EC_vals, alpha, **kwargs) if kwargs["CI_METHOD"] == "HPDR" else self.get_EC_CIs(EC_vals, alpha, **kwargs) 
 
 	def get_EC_CIs(self, EC_vals, alpha, *args, **kwargs):
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
@@ -237,21 +250,20 @@ class CI_finder:
 		quantiles = np.array([alpha/2, 1- alpha/2])
 		return np.quantile(self.params[:,parameter], quantiles, interpolation='linear', axis = 0)
 
-	def plot_CIs(self, low = .025, line = 0.5, high =  0.975, options=None):
-		self.get_plot_CIs(quantiles = [low, line, high], options=options)
-
+	def plot_CIs(self):
+		lb = (1 - self.options["CURVE_CI"])/2
+		ub = 1 - lb
+		self.get_plot_CIs(quantiles = [lb, 0.5, ub])
 		merlin_plot = MerlinGrapher(x = self.x, 
 									lb = self.plot_quant[0],
 									ub = self.plot_quant[2],
 									line = self.plot_quant[1],
 									conc = self.conc,
-									probs = self.live_count/(self.dead_count + self.live_count))
-		# f, ax = plt.subplots()
-		# ax.fill_between(self.x, self.plot_quant[0], self.plot_quant[2], alpha = 0.5)
-		# ax.plot(self.x, self.plot_quant[1], 'r-')
-		# ax.plot(self.conc, self.live_count/(self.dead_count + self.live_count), 'g.')
+									probs = self.live_count/(self.dead_count + self.live_count), 
+									error_bars = self.error_bars,
+									options = self.options)
 		return merlin_plot
-	
+
 	def update_options(self, options): 
 		for k, v in options.items(): self.options[k] = v
 	

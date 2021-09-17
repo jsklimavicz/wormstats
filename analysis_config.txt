@@ -1,0 +1,90 @@
+###################################################
+#                Required Parameters              #
+###################################################
+ARCHIVE_DIR=/home/jklimavicz/Documents/Merlin_Images
+#IMG_DIR=/home/jklimavicz/Documents/platereader_test
+OUT_DIR=/home/jklimavicz/Documents/test_output
+
+###################################################
+#                 General Options                 #
+###################################################
+#BOOTSTRAP_ITERS is the number of bootstraping iterations for data generation. Higher numbers provide better estimates of 
+#bootstrapped confidence intervals, but takes longer to run. Suggested values are 500 to 10 000.
+BOOTSTRAP_ITERS = 1000
+
+#RHO is an approximate factor to provide correlation in bootstrapped random beta variables. RHO should be in the interval (-0.25, 0.5).
+#Higher values are associated with greater positive correlation between wells, while negative values give negative correlation between 
+#wells. Note that correlation falls off with distance between wells. See documentation for details. 
+RHO = 0.10
+
+#SCALE is a factor that allows for control of the beta distribution for generation of random variables from the prior for bayesian curve fitting.
+#Note that when SCALE = 0.5, this is equivalent to using Jeffreys' prior.
+SCALE = 0.10
+
+#Method for calculating confidence intervals. Implemented methods are "even-tailed" or "HPDR" (default) (highest density probability region)
+CI_METHOD = "even-tailed"
+
+#number of x points for the plots. Higher numbers will give smoother curves, but makes the data larger to store. 
+N_POINTS=151
+
+
+###################################################
+#                 Graphing Options                #
+###################################################
+
+################### CENTER LINE ###################
+#Plot the center line?
+PLOT_LINE = True
+
+#Select from matmolplot's named colors. https://matplotlib.org/stable/gallery/color/named_colors.html
+LINE_COLOR = black
+
+#Select from matmolplot's linestyles. https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html
+LINE_STYLE = solid
+
+################### DATA POINTS ###################
+#Plot individual data points?
+PLOT_DATA_POINTS = True
+
+#Select from matmolplot's named colors. https://matplotlib.org/stable/gallery/color/named_colors.html
+POINT_COLOR = black
+
+#Select from https://matplotlib.org/stable/api/markers_api.html#module-matplotlib.markers
+MARKER_STYLE = .
+
+#Should error bars be plotted for each point?
+ERROR_BARS=True
+
+#Credible interval size represented by each point's CI. ERROR_BAR_CI = 80 means that the error bars represents the 80% credible interval. 
+ERROR_BAR_CI = 80
+
+#If jitter is true, then data points are randomly shifted by up to jitter factor to prvent data overlap.
+JITTER=True
+
+#JITTER_FACTOR should be a float in the range [0, 0.5].
+JITTER_FACTOR=0.1
+
+################### CURVE ERROR ###################
+#Plot the error region?
+PLOT_CURVE_ERROR = True
+
+#Alpha-value of the curve error region (1=fully opaque; 0=fully transparent)
+ALPHA = 0.5
+
+#Select from matmolplot's named colors. https://matplotlib.org/stable/gallery/color/named_colors.html
+CURVE_CI_COLOR = lightgrey
+
+#Width of bootstrapped confidence interval for the curve. 
+CURVE_CI = 95
+
+###################################################
+#                 Analysis Options                #
+###################################################
+#LC_VALUES should be a comma-separated list of the LC values desired. For example, "50, 90" would provide LC50 and LC90 values in the output. 
+LC_VALUES = 50, 90
+
+#Credible interval percent (e.g. 95 would provide a 95% confidence interval.)
+LC_CI = 95
+
+#Compound for which relative potencies are given. 
+REFERENCE_COMPOUND=malathion

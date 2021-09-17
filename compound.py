@@ -7,20 +7,22 @@ class Compound:
 	def __init__(self, *args, **kwargs):
 		self.data = empty_cpmd_dict()
 		for k, v in kwargs.items(): self.data[k] = v
+		self.options = {}
 		self.curve_data = None
 		self.plot = None
-	def fit_data(self, **kwargs):
-		for k, v in kwargs.items(): 
-			self.data[k] = v
-		self.curve_data = CI_finder(**self.data)
-	def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method = "HPDR", options=None):
+	def fit_data(self, options):
+		for k, v in options.items(): self.options[k] = v
+		self.curve_data = CI_finder(**self.data, options = self.options)
+	# def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method = "HPDR", options=None):
+	def get_CIs(self,  **kwargs):
 		if self.curve_data is None: self.fit_data()
-		p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
+		# p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
+		p = self.curve_data.get_CIs(**kwargs)
 		return p
 	def make_plot(self):
 		self.plot = self.curve_data.plot_CIs()
-		self.plot.plot_data()
 		self.plot.set_labels(title = self.data["name"])
+		self.plot.plot_data()
 		return self.plot.ax
 
 	# def get_graph_ticks
