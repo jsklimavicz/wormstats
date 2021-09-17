@@ -9,6 +9,7 @@ from copy import deepcopy
 import pickle
 import hashlib
 import hmac
+from merlin_grapher import MerlinGrapher
 
 class MerlinAnalyzer:
 
@@ -65,7 +66,6 @@ class MerlinAnalyzer:
 		else:
 			print('Pickled data as been compromised. Old data cannot be loaded.')
 
-
 	def merge_old_new(self, new_datafile, archive_path, key_file):
 		if os.path.exists(os.path.join(archive_path,self.archivefilename)): 
 			self.cmpd_data = self.read_archive(archive_path)
@@ -76,8 +76,7 @@ class MerlinAnalyzer:
 			for k, v, in new_cmpd_dict.items():
 				if k in self.cmpd_data: self.cmpd_data[k] = self.cmpd_data[k] + new_cmpd_dict[k]
 				else: self.cmpd_data[k] = v
-				v.test_print()
-				self.cmpd_data[k].test_print()
+				# self.cmpd_data[k].test_print()
 
 	def save_archive(self, filepath, *args, **kwargs):
 		pickle_data = pickle.dumps(self.cmpd_data)
@@ -92,9 +91,12 @@ class MerlinAnalyzer:
 		new_compound_dict = {}
 		for cmpd_id in new_data["Compound"].unique():
 			cmpd_data = new_data[new_data["Compound"] == cmpd_id].copy()
-			unique_ids = ["_".join([x,str(y),str(z)]) for x,y,z in zip(cmpd_data["Date"].tolist(), cmpd_data["Plate"].tolist(), cmpd_data["Row"].tolist())]
+			unique_ids = ["_".join([x,str(y),str(z),w]) for x,y,z,w in zip(cmpd_data["Date"].tolist(), 
+																		cmpd_data["Plate"].tolist(), 
+																		cmpd_data["Row"].tolist(),
+																		cmpd_data["ID"].tolist())]
 			new_compound_dict[cmpd_id] = Compound(name = cmpd_id, 
-							ids = cmpd_id, 
+							ids = cmpd_data["ID"].unique(), 
 							test_dates = cmpd_data["Date"].unique(),
 							max_conc = max(cmpd_data["Conc"].tolist()),
 							n_trials = len(cmpd_data["Row"].unique()),
@@ -127,20 +129,17 @@ class MerlinAnalyzer:
 						image_dir = None, 
 						*args, 
 						**kwargs):
-
 		self.merge_old_new(new_datafile, archive_path, key_file)
 		# self.process_compounds(*args, **kwargs)
-
 		for cmpd_name, cmpd in self.cmpd_data.items():
 			print(cmpd.data["name"])
 			cmpd.fit_data()
 			EC = cmpd.get_CIs(CI_method = "equal_tail")
 			print(EC)
-		# # EC = cmpd.get_CIs(CI_method = "HPDR")
-		# # print(EC)
-			ax = cmpd.plot_curve()
-			# plt.show()
-
+			ax = cmpd.make_plot()
+			plt.show()
+			# # EC = cmpd.get_CIs(CI_method = "HPDR")
+			# # print(EC)
 		if csv_outfile: self.save_csv(csv_outfile, *args, **kwargs)
 		if archive_path: self.save_archive(archive_path, *args, **kwargs)
 		if image_dir: self.save_plots(image_dir, *args, **kwargs)
