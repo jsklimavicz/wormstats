@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import warnings
 from statistics import median, mean
 from sklearn.neighbors import KernelDensity
+from merlin_grapher import MerlinGrapher
 
 def default_params_dict():
 	param_dict = {"bs_iter": 500, 
@@ -17,7 +18,7 @@ def default_params_dict():
 						"method": 'BFGS', 
 						"scale": 0.1, 
 						"rho": -0.1,
-						"n_points": 101,
+						"n_points": 151,
 						"CI_method": "HPDR"}
 	return param_dict
 
@@ -160,7 +161,8 @@ class CI_finder:
 	def calculate_curves(self):
 		if self.points is not None: return
 		self.min_conc, self.max_conc = min(self.conc)-1, max(self.conc)+1
-		self.x = np.linspace(self.min_conc, self.max_conc, self.options["n_points"])
+		lb, ub = math.floor(self.min_conc), math.ceil(self.max_conc)
+		self.x = np.linspace(lb-1, ub+1, self.options["n_points"])
 		self.points = np.zeros((len(self.params), self.options["n_points"]))
 		for iter_count, row in enumerate(self.params): self.points[iter_count] = self.loglogit3(row, self.x)
 		self.find_r2()
@@ -237,11 +239,18 @@ class CI_finder:
 
 	def plot_CIs(self, low = .025, line = 0.5, high =  0.975, options=None):
 		self.get_plot_CIs(quantiles = [low, line, high], options=options)
-		f, ax = plt.subplots()
-		ax.fill_between(self.x, self.plot_quant[0], self.plot_quant[2], alpha = 0.5)
-		ax.plot(self.x, self.plot_quant[1], 'r-')
-		ax.plot(self.conc, self.live_count/(self.dead_count + self.live_count), 'g.')
-		return ax
+
+		merlin_plot = MerlinGrapher(x = self.x, 
+									lb = self.plot_quant[0],
+									ub = self.plot_quant[2],
+									line = self.plot_quant[1],
+									conc = self.conc,
+									probs = self.live_count/(self.dead_count + self.live_count))
+		# f, ax = plt.subplots()
+		# ax.fill_between(self.x, self.plot_quant[0], self.plot_quant[2], alpha = 0.5)
+		# ax.plot(self.x, self.plot_quant[1], 'r-')
+		# ax.plot(self.conc, self.live_count/(self.dead_count + self.live_count), 'g.')
+		return merlin_plot
 	
 	def update_options(self, options): 
 		for k, v in options.items(): self.options[k] = v
