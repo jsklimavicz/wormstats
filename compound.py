@@ -1,7 +1,7 @@
 import numpy as np
 from curvell import CI_finder
 import matplotlib.pyplot as plt
-
+from merlin_grapher import MerlinGrapher
 
 class Compound:
 	def __init__(self, *args, **kwargs):
@@ -17,11 +17,17 @@ class Compound:
 		if self.curve_data is None: self.fit_data()
 		p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
 		return p
-	def plot_curve(self):
+	def make_plot(self):
 		self.plot = self.curve_data.plot_CIs()
-		return self.plot
+		self.plot.plot_data()
+		self.plot.set_labels(title = self.data["name"])
+		return self.plot.ax
+
+	# def get_graph_ticks
 
 	def __add__(self, other):
+		other = self.remove_duplicates(other)
+		if other is None: return Compound(**self.data)
 		for k, v in self.data.items(): 
 			if k == "name": pass
 			elif k == "max_conc":
@@ -31,18 +37,30 @@ class Compound:
 			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
 				self.data[k] = np.array([*self.data[k], *other.data[k]])
 			else:
+				print(k)
+				print(self.data[k], other.data[k])
 				self.data[k] = [*self.data[k], *other.data[k]]
 		return Compound(**self.data)
 
 	def __sub__(self, uid_list):
-
+		for k, v in self.data.items(): 
+			if k == "name": pass
+			elif k in ["conc", "live_count", "dead_count", "ctrl_mort", "column_IDs", "row_IDs", "plate_ids", "reps", "ctrl_mort", "unique_plate_ids"]:
+				del self.data[k][uid_list]
+		date, plate, row, ids = [list(d) for d in zip(*[[i for i in c.split('_')] for c in self.data["unique_plate_ids"]])]
+		self.data["ID"] = list(set(ids))
+		self.data["test_dates"] = list(set(date))
+		self.data["n_trials"] = list(set(self.data["n_trials"]))
+		self.data["max_conc"] = max(self.data["conc"])
+		return Compound(**self.data)
 
 	def remove_duplicates(self, other):
 		dup_uniqueIDs = [uid for uid in other.data["unique_plate_ids"] if uid in self.data["unique_plate_ids"]]
 		if len(dup_uniqueIDs) > 0: #then duplicates exist
 			dup_loc = [i for i, x in enumerate(other.data["unique_plate_ids"]) if x in dup_uniqueIDs]
 			if len(dup_loc) == len(self.data["unique_plate_ids"]): return None #all values are duplicates
-
+			else: return other - dup_loc
+		else: return other
 
 	def test_print(self):
 		print(self.data["name"])
@@ -50,7 +68,6 @@ class Compound:
 			print("      ", k, ": ", "(", type(v), ")", v, sep = "")
 		if self.curve_data is not None: print("Curve data found.")
 		if self.plot is not None: print("Plot found.")
-
 
 def empty_cpmd_dict():
 	return {"name": None, #name of the compound
