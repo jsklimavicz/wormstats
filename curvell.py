@@ -1,12 +1,13 @@
 import math
 from scipy.optimize import minimize
 from scipy.special import gamma
+from scipy.interpolate import CubicSpline
 import numpy as np
 from corr_beta import corr_beta_vars
 from joblib import load, Parallel, delayed
 import matplotlib.pyplot as plt
 import warnings
-from statistics import median
+from statistics import median, mean
 from sklearn.neighbors import KernelDensity
 
 def default_params_dict():
@@ -162,7 +163,18 @@ class CI_finder:
 		self.x = np.linspace(self.min_conc, self.max_conc, self.options["n_points"])
 		self.points = np.zeros((len(self.params), self.options["n_points"]))
 		for iter_count, row in enumerate(self.params): self.points[iter_count] = self.loglogit3(row, self.x)
-	
+		self.find_r2()
+		print(self.r2)
+
+	def find_r2(self):
+		center_curve = np.quantile(self.points, 0.5, interpolation='linear', axis = 0)
+		spline = CubicSpline(self.x, center_curve)
+		spline_vals = spline(self.conc)
+		probs = self.live_count / (self.dead_count+self.live_count)
+		sum_of_square_resids = sum((spline_vals - probs) ** 2)
+		sum_of_square_nofit = sum((spline_vals - mean(probs)) ** 2)
+		self.r2 = 1- sum_of_square_resids/sum_of_square_nofit
+
 	def get_plot_CIs(self, quantiles = [.025, 0.5, 0.975], options=None):
 		if self.plot_quant is None: 
 			if options: self.update_options(options)
@@ -176,7 +188,6 @@ class CI_finder:
 		EC_vals = self.ll3_find_EC(EC)
 		alpha = 1. - CI_val
 		return self.get_HPDR_CIs(EC_vals, alpha, *args, **kwargs) if CI_method == "HPDR" else self.get_EC_CIs(EC_vals, alpha, *args, **kwargs) 
-
 
 	def get_EC_CIs(self, EC_vals, alpha, *args, **kwargs):
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
