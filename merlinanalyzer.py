@@ -10,6 +10,7 @@ import pickle
 import hashlib
 import hmac
 from merlin_grapher import MerlinGrapher
+import utils
 
 class MerlinAnalyzer:
 
@@ -18,6 +19,7 @@ class MerlinAnalyzer:
 
 	def __init__(self, *args, **kwargs):
 		self.cmpd_data = {}
+		self.options = utils.parse_config_file()
 
 	def column_name_modifier(self, filename):
 		new_data = pd.read_csv(filename, header = 0)
@@ -133,8 +135,8 @@ class MerlinAnalyzer:
 		# self.process_compounds(*args, **kwargs)
 		for cmpd_name, cmpd in self.cmpd_data.items():
 			print(cmpd.data["name"])
-			cmpd.fit_data()
-			EC = cmpd.get_CIs(CI_method = "equal_tail")
+			cmpd.fit_data(options = self.options)
+			EC = cmpd.get_CIs(**self.options)
 			print(EC)
 			ax = cmpd.make_plot()
 			plt.show()
