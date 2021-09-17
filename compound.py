@@ -11,12 +11,12 @@ class Compound:
 		self.curve_data = None
 		self.plot = None
 	def fit_data(self, options):
+		# print(self.curve_data.__dict__)
 		for k, v in options.items(): self.options[k] = v
-		self.curve_data = CI_finder(**self.data, options = self.options)
-	# def get_CIs(self, EC = np.array([0.1, 0.5, 0.9]), CI_val=0.95, CI_method = "HPDR", options=None):
+		if self.curve_data is None: self.curve_data = CI_finder(**self.data, options = self.options)
 	def get_CIs(self,  **kwargs):
-		if self.curve_data is None: self.fit_data()
-		# p = self.curve_data.get_CIs(EC = EC, CI_val=CI_val, CI_method = CI_method, options=options)
+		# print(self.curve_data.__dict__)
+		# if self.curve_data is None: self.fit_data()
 		p = self.curve_data.get_CIs(**kwargs)
 		return p
 	def make_plot(self):
@@ -29,7 +29,15 @@ class Compound:
 
 	def __add__(self, other):
 		other = self.remove_duplicates(other)
-		if other is None: return Compound(**self.data)
+		if other is None: 
+			cmpd = Compound(**self.data)
+			cmpd.options = self.options
+			cmpd.curve_data = self.curve_data
+			# print(cmpd.curve_data.__dict__)
+			# exit()
+			return cmpd
+
+		#If we get to this point, then we need to calculate new curves. 
 		for k, v in self.data.items(): 
 			if k == "name": pass
 			elif k == "max_conc":
@@ -39,8 +47,6 @@ class Compound:
 			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
 				self.data[k] = np.array([*self.data[k], *other.data[k]])
 			else:
-				print(k)
-				print(self.data[k], other.data[k])
 				self.data[k] = [*self.data[k], *other.data[k]]
 		return Compound(**self.data)
 
@@ -70,6 +76,12 @@ class Compound:
 			print("      ", k, ": ", "(", type(v), ")", v, sep = "")
 		if self.curve_data is not None: print("Curve data found.")
 		if self.plot is not None: print("Plot found.")
+
+	def saveable_cmpd(self):
+		no_plt_cmpd = Compound(**self.data)
+		no_plt_cmpd.options = self.options
+		no_plt_cmpd.curve_data = self.curve_data
+		return no_plt_cmpd
 
 def empty_cpmd_dict():
 	return {"name": None, #name of the compound

@@ -11,11 +11,13 @@ import hashlib
 import hmac
 from merlin_grapher import MerlinGrapher
 import utils
+from time import time
 
 class MerlinAnalyzer:
 
 	archivefilename = "merlin_bioassay_archive_data.pickle"
 	picklesha1hash = ".picklehash"
+	sha_key = b"merlin-data"
 
 	def __init__(self, *args, **kwargs):
 		self.cmpd_data = {}
@@ -61,7 +63,7 @@ class MerlinAnalyzer:
 			pickle_hash = file.read().strip()
 		with open(os.path.join(filepath, self.archivefilename), 'rb') as file:
 			pickled_data = file.read()
-		digest =  hmac.new(b'shared-key', pickled_data, hashlib.sha1).hexdigest()
+		digest =  hmac.new(self.sha_key, pickled_data, hashlib.sha1).hexdigest()
 		if pickle_hash == digest:
 			unpickled_data = pickle.loads(pickled_data)
 			return unpickled_data
@@ -81,8 +83,11 @@ class MerlinAnalyzer:
 				# self.cmpd_data[k].test_print()
 
 	def save_archive(self, filepath, *args, **kwargs):
-		pickle_data = pickle.dumps(self.cmpd_data)
-		digest =  hmac.new(b'shared-key', pickle_data, hashlib.sha1).hexdigest()
+		saveable_lib = {}
+		for k, v in self.cmpd_data.items():
+			saveable_lib[k] = self.cmpd_data[k].saveable_cmpd()
+		pickle_data = pickle.dumps(saveable_lib)
+		digest =  hmac.new(self.sha_key, pickle_data, hashlib.sha1).hexdigest()
 		header = '%s' % (digest)
 		with open(os.path.join(filepath, self.picklesha1hash), 'w') as file:
 			file.write(header)
@@ -134,14 +139,18 @@ class MerlinAnalyzer:
 		self.merge_old_new(new_datafile, archive_path, key_file)
 		# self.process_compounds(*args, **kwargs)
 		for cmpd_name, cmpd in self.cmpd_data.items():
+			tic = time()
 			print(cmpd.data["name"])
 			cmpd.fit_data(options = self.options)
 			EC = cmpd.get_CIs(**self.options)
 			print(EC)
 			ax = cmpd.make_plot()
-			plt.show()
+			# plt.show()
 			# # EC = cmpd.get_CIs(CI_method = "HPDR")
 			# # print(EC)
+			# exit()
+			print(f"Time on compound {cmpd.data['name']}: {time()-tic}")
+			# exit()
 		if csv_outfile: self.save_csv(csv_outfile, *args, **kwargs)
 		if archive_path: self.save_archive(archive_path, *args, **kwargs)
 		if image_dir: self.save_plots(image_dir, *args, **kwargs)

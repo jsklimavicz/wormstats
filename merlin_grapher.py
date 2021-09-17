@@ -9,35 +9,32 @@ class MerlinGrapher:
 		self.options = options
 
 	def plot_data(self):
-		if "x" in self.data and "lb" in self.data and "ub" in self.data:
+		if "x" in self.data and "lb" in self.data and "ub" in self.data and self.options["PLOT_CURVE_ERROR"]:
 			self.ax.fill_between(self.data["x"], 
 				self.data["lb"], 
 				self.data["ub"], 
 				color = self.options["CURVE_CI_COLOR"],
 				alpha = self.options["ALPHA"] if "ALPHA" in self.options else 0.5)
-		if "x" in self.data and "line" in self.data: 
+		if "x" in self.data and "line" in self.data and self.options["PLOT_LINE"]: 
 			self.ax.plot(self.data["x"], 
 				self.data["line"], 
 				c = self.options["LINE_COLOR"], 
 				ls = self.options["LINE_STYLE"])
-		if "conc" in self.data and "probs" in self.data:
-			conc = self.data["conc"]
-			print(conc)
+		if "conc" in self.data and "probs" in self.data and self.options["PLOT_DATA_POINTS"]:
+			conc = self.data["conc"].copy()
 			if self.options["JITTER"]: conc += np.random.uniform(-self.options["JITTER_FACTOR"], self.options["JITTER_FACTOR"], len(self.data["conc"]))
-			print(conc)
 			self.ax.plot(conc, 
 				self.data["probs"], 
 				marker = self.options["MARKER_STYLE"], 
 				mew = 0.0, 
 				mfc = self.options["POINT_COLOR"], 
 				ls = 'None')
-			if "error_bars" in self.data:
+			if "error_bars" in self.data and self.options["ERROR_BARS"]:
 				self.ax.errorbar(x = conc, 
 					y = self.data["probs"], 
 					yerr = self.data["error_bars"], 
 					ecolor = self.options["POINT_COLOR"],
 					ls = 'None')
-
 
 	def set_labels(self, title):
 		self.ax.set_xlabel('Concentration (ppm)')

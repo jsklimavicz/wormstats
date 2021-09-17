@@ -10,6 +10,7 @@ import warnings
 from statistics import median, mean
 from sklearn.neighbors import KernelDensity
 from merlin_grapher import MerlinGrapher
+from time import time
 
 def default_params_dict():
 	param_dict = {"BOOTSTRAP_ITERS": 500, 
@@ -161,6 +162,7 @@ class CI_finder:
 			else:
 				self.params[iter_count,0:2] = res.x
 				self.params[iter_count,2] = 1.
+		
 
 	def get_point_error_bars(self, beta_probs):
 		lb = (1 - self.options["ERROR_BAR_CI"])/2.
@@ -198,7 +200,6 @@ class CI_finder:
 	
 	def get_CIs(self, **kwargs):
 		if self.params is None: self.bootstrap_CIs()
-		print(kwargs["LC_VALUES"])
 		LC_VALUES = 1-kwargs["LC_VALUES"]
 		EC_vals = self.ll3_find_EC(LC_VALUES)
 		alpha = 1. - kwargs["LC_CI"]
