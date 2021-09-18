@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import sys
 import pandas as pd
 from curvell import CI_finder
 import matplotlib.pyplot as plt
@@ -119,14 +120,102 @@ class MerlinAnalyzer:
 							*args, **kwargs)
 		return new_compound_dict
 
-	def save_csv(self, filename, *args, **kwargs):
+	def save_csv(self, filename, header, body):
+		with open(filename, 'w') as file:
+			file.write(",".join(header) + "\n")
+			file.write("\n".join(body))
+
+	def generate_csv_data_lines(self, header):
+		def format_lc_val(val, sig = 3):
+			if val < 1e-2 or val >1e3: 
+				return f"{(round(val,sig)):.2e}"
+			else: return f"{(round(val,sig)):.3g}"
+
+
+		def CI_to_string(ci1, ci2, sig = 3):
+			return '"[' + format_lc_val(ci1,sig) +", "+ format_lc_val(ci2,sig) + ']"'
+
+		def format_LC_to_CSV(CI_array, sig = 3):
+			output = []
+			for line in CI_array:
+				output.append(format_lc_val(line[1],sig))
+				output.append(CI_to_string(line[0],line[2], sig = sig))
+			return output
+
+		output = []
+		for cmpd_name, cmpd in self.cmpd_data.items():
+			line = []
+			slope_info = cmpd.curve_data.get_slope_CI(CI_val = self.options['LC_CI'])
+			rel_pot = self.compare_LC(cmpd1 = cmpd_name, 
+				cmpd2 = self.options['REFERENCE_COMPOUND'], 
+				LCval = self.options['LC_VALUES'],
+				CI = self.options['REL_POT_CI'],
+				n_bs = 10000)
+
+			rel_done = False
+			LC_done = False
+
+			for item in header:
+				if item.lower() in 'compound': line.append(cmpd.data["name"])
+				elif 'trial' in item.lower(): line.append(str(cmpd.data["n_trials"]))
+				elif item.lower() in 'slope': line.append(format_lc_val(slope_info[1],3))
+				elif 'slope' in item.lower() and 'ci' in item.lower(): 
+					line.append(CI_to_string(slope_info[0], slope_info[2]))
+				elif self.options['REFERENCE_COMPOUND'].lower() in item.lower():
+					if rel_done: continue
+					else:
+						line = [*line, *format_LC_to_CSV(rel_pot)]
+						rel_done = True
+				elif self.options['REFERENCE_COMPOUND'].lower() not in item.lower() and "lc" in item.lower():
+					if LC_done: continue
+					else:
+						line = [*line, *format_LC_to_CSV(cmpd.get_LC_CIs(**self.options))]
+						LC_done = True
+				elif "codes" in item.lower(): line.append('"' + ",".join([i for i in cmpd.data["ids"]]) + '"')
+				elif "date" in item.lower(): line.append('"' + ",".join([i for i in cmpd.data["test_dates"]]) + '"')
+				else: line.append(" ")
+			output.append(",".join(line))
+		return output
+
+	def generate_csv_header(self):
+		LC_title_names = []
+		for idx, LC in enumerate(self.options['LC_VALUES']): 
+			LC_title_names.append("LC" + str(round(self.options['LC_VALUES'][idx] * 100)))
+			LC_title_names.append("LC" + str(round(self.options['LC_VALUES'][idx]* 100)) + 
+						" " + str(round(self.options['LC_CI']* 100)) + "%CI")
+		rel_pot_col = []
+		for idx, LC in enumerate(self.options['LC_VALUES']): 
+			rel_pot_col.append(self.options['REFERENCE_COMPOUND'] + ' Pot. Rel. to Cmpd. at LC' + 
+						str(round(self.options['LC_VALUES'][idx] * 100)))
+			rel_pot_col.append(self.options['REFERENCE_COMPOUND'] + ' Pot. Rel. to Cmpd. at LC' + 
+						str(round(self.options['LC_VALUES'][idx] * 100)) + 
+						" " + str(round(self.options['REL_POT_CI']* 100)) + "%CI")
+		header = ['Compound', 
+					'Number of Trials', 
+					*LC_title_names,
+		 			'Slope', 
+		 			'Slope CI',  
+		 			*rel_pot_col,
+		 			'Tested Codes', 
+		 			'Test Dates']
+		return header
+
+	def save_plots(self, name, image_dir, image, *args, **kwargs):
 		return
 
-	def save_plots(self, image_dir, *args, **kwargs):
-		return
-
-	def compare_LC(self, cmpd1, cmpd2, LCval = 50, CI = 0.95, *args, **kwargs):
-		return
+	def compare_LC(self, cmpd1, cmpd2, LCval = np.array([0.5]), CI = 0.95, n_bs = 10000, *args, **kwargs):
+		'''
+		Calculates relative potency using random samples from the kernel density of the LCx distribution for
+		cmpd1 and cmpd2.
+		'''
+		kernel1 = self.cmpd_data[cmpd1].curve_data.LC_kernel(LCval).sample(n_samples=n_bs)
+		kernel2 = self.cmpd_data[cmpd2].curve_data.LC_kernel(LCval).sample(n_samples=n_bs)
+		diff = kernel1 - kernel2
+		lb = (1. - CI)/2.
+		ub = 1.-lb
+		quantiles = [lb, 0.5, ub]
+		vals = np.quantile(diff, quantiles, interpolation='linear', axis = 0)
+		return np.exp(vals).T
 
 	def full_process(self, 
 						new_datafile = None, 
@@ -138,24 +227,28 @@ class MerlinAnalyzer:
 						**kwargs):
 		self.merge_old_new(new_datafile, archive_path, key_file)
 		# self.process_compounds(*args, **kwargs)
+
+		output_info = []
+
 		for cmpd_name, cmpd in self.cmpd_data.items():
 			tic = time()
 			print(cmpd.data["name"])
 			cmpd.fit_data(options = self.options)
-			EC = cmpd.get_CIs(**self.options)
-			print(EC)
 			ax = cmpd.make_plot()
-			# plt.show()
-			# # EC = cmpd.get_CIs(CI_method = "HPDR")
-			# # print(EC)
-			# exit()
-			print(f"Time on compound {cmpd.data['name']}: {time()-tic}")
-			# exit()
-		if csv_outfile: self.save_csv(csv_outfile, *args, **kwargs)
+			if image_dir: self.save_plots(name, image_dir, ax)
+ 
+		header = self.generate_csv_header()
+		body = self.generate_csv_data_lines(header)
+			
+		if csv_outfile: self.save_csv(csv_outfile, header, body, *args, **kwargs)
 		if archive_path: self.save_archive(archive_path, *args, **kwargs)
-		if image_dir: self.save_plots(image_dir, *args, **kwargs)
+		
 
 if __name__ == "__main__":
 	MA = MerlinAnalyzer()
-	MA.full_process(new_datafile = "./test.csv", key_file = "./key.csv", archive_path=".")
+	MA.full_process(new_datafile = "./test.csv", 
+		key_file = "./key.csv", 
+		archive_path=".", 
+		csv_outfile = './output.csv', 
+		image_dir= "./images")
 

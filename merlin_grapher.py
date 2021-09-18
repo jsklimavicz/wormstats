@@ -3,23 +3,32 @@ import matplotlib.colors as mcolors
 import numpy as np
 
 class MerlinGrapher:
+	'''
+	Class for holding and modifying graphs for data and dost-response data.
+	'''
 	def __init__(self, *args, options = {}, **kwargs):
 		self.f, self.ax = plt.subplots()
 		self.data = kwargs
 		self.options = options
 
 	def plot_data(self):
+		'''
+		Plots the actual data.
+		'''
+		#Confidence intervals for the curve.
 		if "x" in self.data and "lb" in self.data and "ub" in self.data and self.options["PLOT_CURVE_ERROR"]:
 			self.ax.fill_between(self.data["x"], 
 				self.data["lb"], 
 				self.data["ub"], 
 				color = self.options["CURVE_CI_COLOR"],
 				alpha = self.options["ALPHA"] if "ALPHA" in self.options else 0.5)
+		#Best fit line.
 		if "x" in self.data and "line" in self.data and self.options["PLOT_LINE"]: 
 			self.ax.plot(self.data["x"], 
 				self.data["line"], 
 				c = self.options["LINE_COLOR"], 
 				ls = self.options["LINE_STYLE"])
+		#Data points.
 		if "conc" in self.data and "probs" in self.data and self.options["PLOT_DATA_POINTS"]:
 			conc = self.data["conc"].copy()
 			if self.options["JITTER"]: conc += np.random.uniform(-self.options["JITTER_FACTOR"], self.options["JITTER_FACTOR"], len(self.data["conc"]))
@@ -29,6 +38,7 @@ class MerlinGrapher:
 				mew = 0.0, 
 				mfc = self.options["POINT_COLOR"], 
 				ls = 'None')
+			#Error bars. 
 			if "error_bars" in self.data and self.options["ERROR_BARS"]:
 				self.ax.errorbar(x = conc, 
 					y = self.data["probs"], 
@@ -37,6 +47,9 @@ class MerlinGrapher:
 					ls = 'None')
 
 	def set_labels(self, title):
+		'''
+		Set axes labels, ticks, title, etc. 
+		'''
 		self.ax.set_xlabel('Concentration (ppm)')
 		self.ax.set_title(label = title)
 		self.ax.set_ylabel('Percent Survival')
@@ -48,6 +61,9 @@ class MerlinGrapher:
 		plt.ylim([0,1])
 
 	def calc_x_ticks(self):
+		'''
+		Calculate the x-ticks for the graph based on the range of concentrations in the data. 
+		'''
 		lb, ub = round(min(self.data["conc"])), round(max(self.data["conc"]))
 		xticks = np.array(range(lb-1, ub+2, 1))
 		xticklabels = [round(2**i) if i >=0 else 2.**i for i in xticks]
