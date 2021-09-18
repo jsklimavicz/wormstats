@@ -4,39 +4,54 @@ import matplotlib.pyplot as plt
 from merlin_grapher import MerlinGrapher
 
 class Compound:
+	'''
+	Class to hold all information for a single compound, from the name, to live/dead counts, 
+	to the options for graphing, etc.
+	'''
 	def __init__(self, *args, **kwargs):
+		'''
+		Initiation of this class should ideally contain as much data as possible from the bioassay. 
+		See the empty_cpmd_dict function in this module for potential keywords.
+		'''
 		self.data = empty_cpmd_dict()
 		for k, v in kwargs.items(): self.data[k] = v
 		self.options = {}
 		self.curve_data = None
 		self.plot = None
 	def fit_data(self, options):
-		# print(self.curve_data.__dict__)
+		'''
+		Sets the curve data for this compounds using class CI_finder in module curvell
+		'''
 		for k, v in options.items(): self.options[k] = v
 		if self.curve_data is None: self.curve_data = CI_finder(**self.data, options = self.options)
-	def get_CIs(self,  **kwargs):
-		# print(self.curve_data.__dict__)
-		# if self.curve_data is None: self.fit_data()
+	def get_LC_CIs(self,  **kwargs):
+		'''
+		Calculates and returns confidence intervals for LC values. 
+		'''
 		p = self.curve_data.get_CIs(**kwargs)
 		return p
 	def make_plot(self):
+		'''
+		Generates a graph of the dose-response data. The graph is initiated in the CI_finder class plot_CIs method, 
+		as a MerlinGrapher class in the merlin_grapher module. 
+		Returns the axis array. 
+		'''
 		self.plot = self.curve_data.plot_CIs()
 		self.plot.set_labels(title = self.data["name"])
 		self.plot.plot_data()
 		return self.plot.ax
 
-	# def get_graph_ticks
 
 	def __add__(self, other):
+		'''
+		Overloaded + operator to join two compound classes that have the same compound name. 
+		'''
 		other = self.remove_duplicates(other)
 		if other is None: 
 			cmpd = Compound(**self.data)
 			cmpd.options = self.options
 			cmpd.curve_data = self.curve_data
-			# print(cmpd.curve_data.__dict__)
-			# exit()
 			return cmpd
-
 		#If we get to this point, then we need to calculate new curves. 
 		for k, v in self.data.items(): 
 			if k == "name": pass
@@ -51,6 +66,10 @@ class Compound:
 		return Compound(**self.data)
 
 	def __sub__(self, uid_list):
+		'''
+		Overloaded - operator to remove entries in the Compound class based on unique ID, to make sure, e.g., that 
+		a specific trial is not included more than once. 
+		'''
 		for k, v in self.data.items(): 
 			if k == "name": pass
 			elif k in ["conc", "live_count", "dead_count", "ctrl_mort", "column_IDs", "row_IDs", "plate_ids", "reps", "ctrl_mort", "unique_plate_ids"]:
@@ -63,6 +82,9 @@ class Compound:
 		return Compound(**self.data)
 
 	def remove_duplicates(self, other):
+		'''
+		Finds 
+		'''
 		dup_uniqueIDs = [uid for uid in other.data["unique_plate_ids"] if uid in self.data["unique_plate_ids"]]
 		if len(dup_uniqueIDs) > 0: #then duplicates exist
 			dup_loc = [i for i, x in enumerate(other.data["unique_plate_ids"]) if x in dup_uniqueIDs]
@@ -77,10 +99,18 @@ class Compound:
 		if self.curve_data is not None: print("Curve data found.")
 		if self.plot is not None: print("Plot found.")
 
-	def saveable_cmpd(self):
+	def saveable_cmpd(self): 
+		'''
+		Makes a lower memory version of the compound for saving purposes. Basically, we want to save the fitted dose-response
+		curve parameters because these are expensive to claculate, but don't need to save the plot, or the fitted data because 
+		these values are cheap to calculate but take up a lot of storage. 
+		'''
 		no_plt_cmpd = Compound(**self.data)
 		no_plt_cmpd.options = self.options
 		no_plt_cmpd.curve_data = self.curve_data
+		#Remove the really storage-pricy stuff.
+		no_plt_cmpd.curve_data.plot_quant = None
+		no_plt_cmpd.curve_data.points = None
 		return no_plt_cmpd
 
 def empty_cpmd_dict():

@@ -3,6 +3,9 @@ import numpy as np
 
 
 def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'analysis_config.txt'):
+    '''
+    Reads in the configuration file 'analysis_config.txt' and converts the specified data to the appropriate type. 
+    '''
     config_dict = default_config()
     config_file_path = os.path.join(config_path, config_filename)
 
@@ -18,9 +21,9 @@ def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'ana
                 val = True if "true" in val.lower() else False
             elif key in ['LC_VALUES']: 
                 val = np.array([float(i.strip()) for i in val.split(",")])/100.
-            elif key in ['RHO', 'SCALE', 'JITTER_FACTOR', 'ALPHA', 'CURVE_CI', 'LC_CI', 'ERROR_BAR_CI']: 
-                val = float(val)/100. if key in ['CURVE_CI', 'LC_CI', 'ERROR_BAR_CI'] else float(val)
-            elif key in ['BOOTSTRAP_ITERS', 'N_POINTS']: 
+            elif key in ['RHO', 'SCALE', 'JITTER_FACTOR', 'ALPHA', 'CURVE_CI', 'LC_CI', 'ERROR_BAR_CI', 'REL_POT_CI']: 
+                val = float(val)/100. if key in ['CURVE_CI', 'LC_CI', 'REL_POT_CI', 'ERROR_BAR_CI'] else float(val)
+            elif key in ['BOOTSTRAP_ITERS', 'N_POINTS', 'NCPU']: 
                 val = int(val)
             config_dict[key] = val
     return config_dict
@@ -29,6 +32,7 @@ def default_config():
     config_dict = {
                     'ARCHIVE_DIR': None,
                     'OUT_DIR': None,
+                    'NCPU': -1,
                     'BOOTSTRAP_ITERS': 1000,
                     'RHO': 0.10,
                     'SCALE': 0.10,
@@ -52,6 +56,7 @@ def default_config():
                     'CURVE_CI': 95 ,
                     'LC_VALUES': [50, 90],
                     'LC_CI': 95,
+                    'REL_POT_CI': 95,
                     'REFERENCE_COMPOUND': 'malathion',
                     }
     return config_dict

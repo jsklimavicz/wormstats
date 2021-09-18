@@ -3,7 +3,7 @@ import scipy.stats as st
 import numpy as np
 
 
-def corr_matrix(plate_ids, rho = 0.25):
+def corr_matrix(plate_ids, rho = 0.10):
 	'''
 	Generates a len(plate_ids) x len(plate_ids) block matrix with the number of 
 	blocks equal to the numebr of unique plates for a compound. 
@@ -21,7 +21,7 @@ def corr_matrix(plate_ids, rho = 0.25):
 					mat[j,i] = val
 	return mat
 
-def corr_beta_vars(plate_ids, live_count, dead_count, size = 1, scale = 0.5, rho = 0.25):
+def corr_beta_vars(plate_ids, live_count, dead_count, size = 1, scale = 0.5, rho = 0.10):
 	#Generates the correlated beta variables
 	#sanity checks
 	assert len(plate_ids) == len(live_count)

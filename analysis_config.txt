@@ -8,6 +8,11 @@ OUT_DIR=/home/jklimavicz/Documents/test_output
 ###################################################
 #                 General Options                 #
 ###################################################
+#Number of cpu processes to use. Default is -1, which uses all available CPUs for computation (most parallel). Setting this value
+#to one makes the computation single-threaded. Internal check is performed to make sure this number is not set higher than the 
+#number of CPUs available. 
+NCPU = -1
+
 #BOOTSTRAP_ITERS is the number of bootstraping iterations for data generation. Higher numbers provide better estimates of 
 #bootstrapped confidence intervals, but takes longer to run. Suggested values are 500 to 10 000.
 BOOTSTRAP_ITERS = 1000
@@ -83,8 +88,11 @@ CURVE_CI = 95
 #LC_VALUES should be a comma-separated list of the LC values desired. For example, "50, 90" would provide LC50 and LC90 values in the output. 
 LC_VALUES = 50, 90
 
-#Credible interval percent (e.g. 95 would provide a 95% confidence interval.)
+#Credible interval percent for LC values(e.g. 95 would provide a 95% confidence interval.)
 LC_CI = 95
+
+#Credible interval percent LC relative potency values (e.g. 95 would provide a 95% confidence interval.)
+REL_POT_CI = 95
 
 #Compound for which relative potencies are given. 
 REFERENCE_COMPOUND=malathion
