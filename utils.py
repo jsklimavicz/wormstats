@@ -61,3 +61,9 @@ def default_config():
                     }
     return config_dict
 
+def fix_num_output(func):
+    def fix_scinot(*args, **kwargs):
+        return func(*args,**kwargs).replace("e+0","e").replace("E+0","e").replace("e-0","e-").replace("E-0","e-").replace("e+","e")
+    return fix_scinot
+
+            

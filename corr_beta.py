@@ -22,6 +22,8 @@ def corr_matrix(plate_ids, rho = 0.10):
 	return mat
 
 def corr_beta_vars(plate_ids, live_count, dead_count, size = 1, scale = 0.5, rho = 0.10):
+	#TODO: Implement Heldane's prior. 
+	if scale < np.sqrt(np.finfo(float).eps): scale =  np.sqrt(np.finfo(float).eps)
 	#Generates the correlated beta variables
 	#sanity checks
 	assert len(plate_ids) == len(live_count)
@@ -33,5 +35,6 @@ def corr_beta_vars(plate_ids, live_count, dead_count, size = 1, scale = 0.5, rho
 	#find normal cdf values 
 	norm_prob = st.norm.cdf(norm_var)
 	#generate beta variables from cdf values
-	beta_var = st.beta.ppf(norm_prob, dead_count + scale, live_count + scale)
+	scale_add = np.where(np.logical_or(dead_count == 0, live_count == 0), 0.25, scale)
+	beta_var = st.beta.ppf(norm_prob, dead_count + scale_add, live_count + scale_add)
 	return beta_var

@@ -12,7 +12,7 @@ from merlin_grapher import MerlinGrapher
 from time import time
 
 def default_params_dict():
-	param_dict = {"BOOTSTRAP_ITERS": 500,  
+	param_dict = {"BOOTSTRAP_ITERS": 1000,  
 						"CURVE_TYPE": 'best', 
 						"FIT_METHOD": 'BFGS', 
 						"SCALE": 0.1, 
@@ -252,9 +252,25 @@ class CI_finder:
 		spline = CubicSpline(self.x, center_curve)
 		spline_vals = spline(self.conc)
 		probs = self.live_count / (self.dead_count+self.live_count)
+		start = 0
+		end = 10
+		# print(self.dead_count[start:end])
+		# print(self.live_count[start:end])
+		# print(probs[start:end])
+		# print(self.conc[start:end])
+		# print(spline_vals[start:end])
 		sum_of_square_resids = sum((spline_vals - probs) ** 2)
-		sum_of_square_nofit = sum((spline_vals - mean(probs)) ** 2)
+		# print(((spline_vals - probs) ** 2)[start:end])
+		# print("SSres:", sum(((spline_vals - probs) ** 2)[start:end]))
+		# print("SSres:", sum_of_square_resids)
+		sum_of_square_nofit = sum((probs - mean(probs)) ** 2)
+		# print("Mean:", mean(probs))
+		# print(((probs - mean(probs)) ** 2)[start:end])
+		# print("SStot:", sum(((probs - mean(probs)) ** 2)[start:end]))
+		# print("SStot:", sum_of_square_nofit)
+		# print("Curr r2:", 1- sum(((spline_vals - probs) ** 2)[start:end])/sum(((probs - mean(probs)) ** 2)[start:end]))
 		self.r2 = 1- sum_of_square_resids/sum_of_square_nofit
+		# print(self.r2 )
 
 	def get_plot_CIs(self, quantiles = [.025, 0.5, 0.975], options=None):
 		'''
@@ -272,8 +288,14 @@ class CI_finder:
 		method returns the conccentrations at which each of the quantiles is met. 
 		'''
 		quant2 = np.tile(np.array(quantiles), (len(self.params),1))
+		# print(quant2[0])
 		params = np.reshape(np.repeat(np.array(self.params[:,0:2]), len(quantiles)), 
 			(self.params[:,0:2].shape[0], self.params[:,0:2].shape[1], len(quantiles)))
+		# print(params[0])
+		# print("calc")
+		# print((np.log(1./quant2 - 1.))[0])
+		# print((np.log(1./quant2 - 1.)-params[:,0])[0])
+		# print(((np.log(1./quant2 - 1.)-params[:,0])/params[:,1])[0])
 		return (np.log(1./quant2 - 1.)-params[:,0])/params[:,1]
 
 	def get_CIs(self, **kwargs):
@@ -283,9 +305,15 @@ class CI_finder:
 		if self.params is None: self.bootstrap_CIs()
 		LC_VALUES = 1-kwargs["LC_VALUES"]
 		EC_vals = self.ll3_find_LC(LC_VALUES)
+		# print("EC Values")
+		# print(self.conc)
+		# print(2**(self.conc))
+		# print(np.power(2,EC_vals))
 		alpha = 1. - kwargs["LC_CI"]
-		EC_CI = self.get_HPDR_CIs(EC_vals, alpha, **kwargs) if kwargs["CI_METHOD"] == "HPDR" else self.get_EC_CIs(EC_vals, alpha, **kwargs) 
-		return np.exp(EC_CI)
+		# print(alpha)
+		EC_CI = self.get_EC_CIs(EC_vals, alpha, **kwargs)
+		# EC_CI = self.get_HPDR_CIs(EC_vals, alpha, **kwargs) if self.options["CI_METHOD"] == "HPDR" else self.get_EC_CIs(EC_vals, alpha, **kwargs) 
+		return np.power(2,EC_CI)
 
 	def get_EC_CIs(self, EC_vals, alpha, *args, **kwargs):
 		'''
@@ -336,7 +364,7 @@ class CI_finder:
 			p = fmin(self.errfn, x0=0, args = (alpha, kde))
 		exit()
 
-	def get_EC50_CI(self, CI_val=0.95): return self.get_param_CI(0, CI_val)
+	def get_LC50_CI(self, CI_val=0.95): return self.get_param_CI(0, CI_val)/self.get_param_CI(1, CI_val)
 	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val)
 	def get_baseline_mort_CI(self, CI_val=0.95): return self.get_param_CI(2, CI_val)
 
@@ -344,6 +372,9 @@ class CI_finder:
 		if self.params is None: self.bootstrap_CIs()
 		alpha = 1. - CI_val
 		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
+		# print("Parameter:", parameter)
+		# print(self.params[:,parameter])
+		# exit()
 		return np.quantile(self.params[:,parameter], quantiles, interpolation='linear', axis = 0)
 
 	def plot_CIs(self):
