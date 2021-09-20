@@ -54,6 +54,8 @@ class MerlinAnalyzer:
 		cmpd_data["ctrl_mort"] = ctrl_ave_mort
 		if key_file is not None: key = self.read_key(key_file)
 		cmpd_data = cmpd_data.merge(key, how='left', on='ID')
+		cmpd_data.dropna(subset = ['Live', 'Dead', 'Compound'], inplace=True)
+		cmpd_data = cmpd_data[cmpd_data.Count != 0]
 		return self.process_compounds(cmpd_data)
 
 	def read_key(self, filename):
@@ -98,6 +100,7 @@ class MerlinAnalyzer:
 	def process_compounds(self, new_data, *args, **kwargs):
 		new_compound_dict = {}
 		for cmpd_id in new_data["Compound"].unique():
+
 			cmpd_data = new_data[new_data["Compound"] == cmpd_id].copy()
 			unique_ids = ["_".join([x,str(y),str(z),w]) for x,y,z,w in zip(cmpd_data["Date"].tolist(), 
 																		cmpd_data["Plate"].tolist(), 
@@ -107,7 +110,8 @@ class MerlinAnalyzer:
 							ids = cmpd_data["ID"].unique(), 
 							test_dates = cmpd_data["Date"].unique(),
 							max_conc = max(cmpd_data["Conc"].tolist()),
-							n_trials = len(cmpd_data["Row"].unique()),
+							min_conc = min(cmpd_data["Conc"].tolist()),
+							n_trials = len(set(unique_ids)),
 							column_IDs = cmpd_data["Column"].tolist(),
 							row_IDs = cmpd_data["Row"].tolist(),
 							conc = np.log(np.array(cmpd_data["Conc"].tolist()))/math.log(2),
@@ -125,32 +129,58 @@ class MerlinAnalyzer:
 			file.write(",".join(header) + "\n")
 			file.write("\n".join(body))
 
+	
 	def generate_csv_data_lines(self, header):
-		def format_lc_val(val, sig = 3):
+
+		@utils.fix_num_output
+		def format_lc_val(val):
 			if val < 1e-2 or val >1e3: 
-				return f"{(round(val,sig)):.2e}"
-			else: return f"{(round(val,sig)):.3g}"
+				return f"{val:.2e}"
+			else: return f"{val:.3g}"
 
+		def CI_to_string(ci1, ci2):
+			return '"[' + format_lc_val(ci1) +", "+ format_lc_val(ci2) + ']"'
 
-		def CI_to_string(ci1, ci2, sig = 3):
-			return '"[' + format_lc_val(ci1,sig) +", "+ format_lc_val(ci2,sig) + ']"'
-
-		def format_LC_to_CSV(CI_array, sig = 3):
+		def format_LC_to_CSV(CI_array):
 			output = []
 			for line in CI_array:
-				output.append(format_lc_val(line[1],sig))
-				output.append(CI_to_string(line[0],line[2], sig = sig))
+				output.append(format_lc_val(line[1]))
+				output.append(CI_to_string(line[0],line[2]))
 			return output
 
 		output = []
+
 		for cmpd_name, cmpd in self.cmpd_data.items():
 			line = []
-			slope_info = cmpd.curve_data.get_slope_CI(CI_val = self.options['LC_CI'])
-			rel_pot = self.compare_LC(cmpd1 = cmpd_name, 
-				cmpd2 = self.options['REFERENCE_COMPOUND'], 
-				LCval = self.options['LC_VALUES'],
-				CI = self.options['REL_POT_CI'],
-				n_bs = 10000)
+			comment = " "
+			good_curve = True
+			#Check to make sure that the slope is positive enough
+			slope_info = cmpd.curve_data.get_slope_CI(CI_val = 0.95)
+			if slope_info[1] < 1.e-2:
+				comment += "Fitted slope is too shallow. "
+				good_curve = False
+
+			#Check to make sure that the LC50 value is close enough to the 
+			LC50_info = cmpd.curve_data.get_LC50_CI(CI_val=0.95)
+			slope_info = cmpd.curve_data.get_slope_CI(CI_val=0.95) 
+			lc_vals = format_LC_to_CSV(cmpd.get_LC_CIs()) 
+
+			if LC50_info[1] > 2*cmpd.data["max_conc"] or LC50_info[1]< cmpd.data["min_conc"]/2.: 
+				print(LC50_info[1], {lc_vals[0]}, cmpd.data["min_conc"]/2., 2*cmpd.data["max_conc"])
+				comment += f"Calculated LC50 ({lc_vals[0]}) out of bounds. "
+				lc_vals = ['NA'] * len(lc_vals)
+				good_curve = False
+				
+			if good_curve:
+				rel_pot = self.compare_LC(cmpd1 = cmpd_name, 
+					cmpd2 = self.options['REFERENCE_COMPOUND'], 
+					LCval = self.options['LC_VALUES'],
+					CI = self.options['REL_POT_CI'],
+					n_bs = 100000)
+				rel_pot = format_LC_to_CSV(rel_pot)
+			else: 
+				lc_vals = ['NA'] * len(lc_vals)
+				rel_pot = ["NA"] * 2*len(self.options['LC_VALUES'])
 
 			rel_done = False
 			LC_done = False
@@ -158,23 +188,30 @@ class MerlinAnalyzer:
 			for item in header:
 				if item.lower() in 'compound': line.append(cmpd.data["name"])
 				elif 'trial' in item.lower(): line.append(str(cmpd.data["n_trials"]))
-				elif item.lower() in 'slope': line.append(format_lc_val(slope_info[1],3))
+				elif item.lower() in 'slope': 
+					# print(cmpd_name, slope_info, format_lc_val(slope_info[1]))
+					line.append(format_lc_val(slope_info[1]))
 				elif 'slope' in item.lower() and 'ci' in item.lower(): 
 					line.append(CI_to_string(slope_info[0], slope_info[2]))
 				elif self.options['REFERENCE_COMPOUND'].lower() in item.lower():
 					if rel_done: continue
 					else:
-						line = [*line, *format_LC_to_CSV(rel_pot)]
+						line = [*line, *rel_pot]
 						rel_done = True
 				elif self.options['REFERENCE_COMPOUND'].lower() not in item.lower() and "lc" in item.lower():
 					if LC_done: continue
 					else:
-						line = [*line, *format_LC_to_CSV(cmpd.get_LC_CIs(**self.options))]
+						line = [*line, *lc_vals]
 						LC_done = True
-				elif "codes" in item.lower(): line.append('"' + ",".join([i for i in cmpd.data["ids"]]) + '"')
-				elif "date" in item.lower(): line.append('"' + ",".join([i for i in cmpd.data["test_dates"]]) + '"')
+				elif "codes" in item.lower(): line.append('"' + ", ".join(list(set([i for i in cmpd.data["ids"]]))) + '"')
+				elif "date" in item.lower(): line.append('"' + ", ".join(list(set([i for i in cmpd.data["test_dates"]]))) + '"')
+				elif item == "R2": line.append(format_lc_val(cmpd.curve_data.r2))
+				elif "comment" in item.lower():
+					comment = comment if len(comment) == 1 else comment[1:len(comment)] 
+					line.append(comment)
 				else: line.append(" ")
 			output.append(",".join(line))
+
 		return output
 
 	def generate_csv_header(self):
@@ -185,9 +222,9 @@ class MerlinAnalyzer:
 						" " + str(round(self.options['LC_CI']* 100)) + "%CI")
 		rel_pot_col = []
 		for idx, LC in enumerate(self.options['LC_VALUES']): 
-			rel_pot_col.append(self.options['REFERENCE_COMPOUND'] + ' Pot. Rel. to Cmpd. at LC' + 
+			rel_pot_col.append('Pot. Rel. to ' + self.options['REFERENCE_COMPOUND'] + ' at LC' + 
 						str(round(self.options['LC_VALUES'][idx] * 100)))
-			rel_pot_col.append(self.options['REFERENCE_COMPOUND'] + ' Pot. Rel. to Cmpd. at LC' + 
+			rel_pot_col.append('Pot. Rel. to ' + self.options['REFERENCE_COMPOUND'] + ' at LC' + 
 						str(round(self.options['LC_VALUES'][idx] * 100)) + 
 						" " + str(round(self.options['REL_POT_CI']* 100)) + "%CI")
 		header = ['Compound', 
@@ -195,12 +232,18 @@ class MerlinAnalyzer:
 					*LC_title_names,
 		 			'Slope', 
 		 			'Slope CI',  
+		 			'R2',
 		 			*rel_pot_col,
 		 			'Tested Codes', 
-		 			'Test Dates']
+		 			'Test Dates',
+		 			'Comments']
 		return header
 
-	def save_plots(self, name, image_dir, image, *args, **kwargs):
+	def save_plot(self, name, image_dir, image, *args, **kwargs):
+		ax = image
+		filename = name + ".png"
+		path = os.path.join(image_dir, filename)
+		plt.savefig(path)
 		return
 
 	def compare_LC(self, cmpd1, cmpd2, LCval = np.array([0.5]), CI = 0.95, n_bs = 10000, *args, **kwargs):
@@ -210,7 +253,7 @@ class MerlinAnalyzer:
 		'''
 		kernel1 = self.cmpd_data[cmpd1].curve_data.LC_kernel(LCval).sample(n_samples=n_bs)
 		kernel2 = self.cmpd_data[cmpd2].curve_data.LC_kernel(LCval).sample(n_samples=n_bs)
-		diff = kernel1 - kernel2
+		diff = kernel2 - kernel1
 		lb = (1. - CI)/2.
 		ub = 1.-lb
 		quantiles = [lb, 0.5, ub]
@@ -230,12 +273,19 @@ class MerlinAnalyzer:
 
 		output_info = []
 
+		# cmpd_ct = 0
 		for cmpd_name, cmpd in self.cmpd_data.items():
-			tic = time()
+			# tic = time()
+			#TODO: Check to see if saved options dictionary is different from current options.
 			print(cmpd.data["name"])
 			cmpd.fit_data(options = self.options)
-			ax = cmpd.make_plot()
-			if image_dir: self.save_plots(name, image_dir, ax)
+			if image_dir: 
+				ax = cmpd.make_plot()
+				self.save_plot(cmpd_name, image_dir, ax)
+				plt.close()
+			# cmpd_ct += 1
+			# if cmpd_ct > 2:
+				# exit()
  
 		header = self.generate_csv_header()
 		body = self.generate_csv_data_lines(header)
@@ -246,7 +296,7 @@ class MerlinAnalyzer:
 
 if __name__ == "__main__":
 	MA = MerlinAnalyzer()
-	MA.full_process(new_datafile = "./test.csv", 
+	MA.full_process(new_datafile = "./input_stats.csv", 
 		key_file = "./key.csv", 
 		archive_path=".", 
 		csv_outfile = './output.csv', 

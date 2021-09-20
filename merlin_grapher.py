@@ -59,6 +59,7 @@ class MerlinGrapher:
 		plt.grid(b=True, alpha = 0.5)
 		plt.xlim([min(xticks), max(xticks)])
 		plt.ylim([0,1])
+		plt.gcf().subplots_adjust(bottom=0.15)
 
 	def calc_x_ticks(self):
 		'''
@@ -68,7 +69,8 @@ class MerlinGrapher:
 		xticks = np.array(range(lb-1, ub+2, 1))
 		xticklabels = [round(2**i) if i >=0 else 2.**i for i in xticks]
 		for i, label in enumerate(xticklabels):
-			if label < 0.125: xticklabels[i] = "{:.2e}".format(label)
+			if label < 1./64.: xticklabels[i] = "{:.1e}".format(label).replace("e-0", "e-")
+			elif label < 1./4.: xticklabels[i] = "{:.3f}".format(label)
 			else: xticklabels[i] = str(label) 
 		return xticks, xticklabels
 		

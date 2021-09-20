@@ -15,6 +15,8 @@ class Compound:
 		'''
 		self.data = empty_cpmd_dict()
 		for k, v in kwargs.items(): self.data[k] = v
+		self.data["max_conc"] = max(self.data["conc"])
+		self.data["min_conc"] = min(self.data["conc"])
 		self.options = {}
 		self.curve_data = None
 		self.plot = None
@@ -24,11 +26,14 @@ class Compound:
 		'''
 		for k, v in options.items(): self.options[k] = v
 		if self.curve_data is None: self.curve_data = CI_finder(**self.data, options = self.options)
-	def get_LC_CIs(self,  **kwargs):
+	def get_LC_CIs(self, LC_VALUES = None, LC_CI = None, **kwargs):
 		'''
 		Calculates and returns confidence intervals for LC values. 
 		'''
-		p = self.curve_data.get_CIs(**kwargs)
+		p = self.curve_data.get_CIs(LC_VALUES = self.options['LC_VALUES'] if LC_VALUES is None else LC_VALUES,
+			LC_CI = self.options['LC_CI'] if LC_CI is None else LC_CI,
+			**kwargs
+			)
 		return p
 	def make_plot(self):
 		'''
@@ -70,15 +75,23 @@ class Compound:
 		Overloaded - operator to remove entries in the Compound class based on unique ID, to make sure, e.g., that 
 		a specific trial is not included more than once. 
 		'''
+
+		# print(uid_list)
+		# print(self.data)
 		for k, v in self.data.items(): 
 			if k == "name": pass
-			elif k in ["conc", "live_count", "dead_count", "ctrl_mort", "column_IDs", "row_IDs", "plate_ids", "reps", "ctrl_mort", "unique_plate_ids"]:
-				del self.data[k][uid_list]
+			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
+				self.data[k] = np.delete(self.data[k], np.array(uid_list))
+			elif k in ["column_IDs", "row_IDs", "plate_ids", "reps", "unique_plate_ids"]:
+				delete_multiple_element(self.data[k], uid_list)
+			# print(self.data[k])
+		# print(self.data)
 		date, plate, row, ids = [list(d) for d in zip(*[[i for i in c.split('_')] for c in self.data["unique_plate_ids"]])]
 		self.data["ID"] = list(set(ids))
 		self.data["test_dates"] = list(set(date))
 		self.data["n_trials"] = list(set(self.data["n_trials"]))
 		self.data["max_conc"] = max(self.data["conc"])
+		self.data["min_conc"] = min(self.data["conc"])
 		return Compound(**self.data)
 
 	def remove_duplicates(self, other):
@@ -86,9 +99,17 @@ class Compound:
 		Finds 
 		'''
 		dup_uniqueIDs = [uid for uid in other.data["unique_plate_ids"] if uid in self.data["unique_plate_ids"]]
+		# print(len(self.data['column_IDs']))
+		r = list(range(len(self.data['column_IDs'])))
+		# print(len(other.data["unique_plate_ids"]))
+		# print(len(dup_uniqueIDs))
 		if len(dup_uniqueIDs) > 0: #then duplicates exist
 			dup_loc = [i for i, x in enumerate(other.data["unique_plate_ids"]) if x in dup_uniqueIDs]
-			if len(dup_loc) == len(self.data["unique_plate_ids"]): return None #all values are duplicates
+			# print(r)
+			# print(dup_loc)
+			r = delete_multiple_element(r, dup_loc)
+			# print(r)
+			if len(dup_loc) == len(other.data["unique_plate_ids"]): return None #all values are duplicates
 			else: return other - dup_loc
 		else: return other
 
@@ -118,6 +139,7 @@ def empty_cpmd_dict():
 				"ids": None, #list of ID codes associated with the compound, of length number of data points.
 				"test_dates": None, #list of testing dates associated with the compound, of length number of data points.
 				"max_conc": None, #maximum concentration of all tests. 
+				"min_conc": None,
 				"n_trials": None, #Number of distinct complete reps. 
 				"column_IDs": None, 
 				"row_IDs": None, 
@@ -128,3 +150,10 @@ def empty_cpmd_dict():
 				"reps": None,
 				"ctrl_mort": None,
 				"unique_plate_ids": None}
+
+def delete_multiple_element(list_object, indices):
+    indices = sorted(indices, reverse=True)
+    for idx in indices:
+        if idx < len(list_object):
+            list_object.pop(idx)
+    return list_object
