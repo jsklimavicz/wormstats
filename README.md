@@ -54,8 +54,18 @@ The `RHO` parameter is used to set correlation between the beta variables contai
 `CI_METHOD` specifies the method of confidence interval calculation. The default behavior (`HPDI`) is to calculate the highest posterior density interval (this is also the optimal CI in terms of decision theory). Setting this value to ``equal-tailed`` will produce credible intervals with equal probabilities of being above or below the median, and equal tail weights. This behavior is set for the credible intervals for both graphing and for the output .csv file. 
 
 
-### Files
+### Analysis Options
 
+The user may specify one or more desired values for LC estimations as a comma-seperated list using the variable `LC_VALUES`. The default values (`50, 90`) results in the estimation of an LC50 and an LC90, and the corresponding credible intervals. The credible interval size is specified using `LC_CI` (default: 95). Relative potencies can also be calculated with respect to a reference compound (defined using `REFERENCE_COMPOUND`, default: malathion). The width of the credible interval for the potency ratio is specified using `REL_POT_CI`.
+ 
+## Files
+This packages contains the following files:
+- `merlinanalyzer.py`, which contains the class object that drives the data analysis.
+- `compound.py` defines the class that contains all the data and calculated parameters for a compound.
+- `curvell.py` does most of the mathematical calculations for curve fitting, parameter estimation, etc.
+- `corr_beta.py` generates the correlated random beta variables for bootstrapping purposes. 
+- `utils.py` contains several useful functions, including the function that creates the options dictionary from `analysis_config.txt`.
+- `analysis_config.txt` is used to set the user-chosen parameters. 
 
 
 
