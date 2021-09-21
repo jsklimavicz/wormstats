@@ -8,6 +8,13 @@ The output data is in .csv value, and includes estimates and credible intervals 
 
 Images of each dose-response curve, the curve credible interval, the actual live/dead data, and the bayesian credible intervals for the actual data are produced. 
 
+## Advanced Description
+
+
+
+Because the numerical optimization of many dose-response curves is somewhat computationally expensive, the program saves fitted curve parameters by pickling. 
+
+
 ## User-Specified Values
 
 The program accepts user-specified values in the file ``analysis_config.txt``. The allowed variables are broken down into groups roughly as follows.
@@ -34,11 +41,18 @@ The values of the credible intervals for both the error bars and the dose-respon
 
 To prevent overcrowding of data points and error bars, the option to `JITTER` the data points is given. Setting this variable to `True` (default) mimics the behavior of `geom_jitter` in `ggplot2` in R, and randomly adjusts the x-value of the data. The amount by which the data can be jittered is given by `JITTER_FACTOR` (default: 0.15), which should be between 0 (no jitter) and 0.5 (jittering by more than this amount would allow data differing by a factor of 2 to overlap). Attempting to set `JITTER_FACTOR` below 0 or above 0.5 will automatically result in `JITTER_FACTOR` being set to 0 or 0.4, respectively. Additionally, the graph may get very crowded when many replicates are performed; in this instance, it may be desirable to omit the plotting of error bars for these compounds only. This behaviour can be controlled by setting `ERROR_BAR_CUTOFF` to the number of reps at which the error bars are no longer plotted (default: 10).
 
+### Data-Fitting Options
 
+Because the curve-fitting process is the most computationally-expensive component of the analysis, this portion has been written to be performed in parallel. The number of CPUs that should be used for computation should be set with `NCPU`. The default behavior is to use all available CPUs, which is automatically determined if `NCPU` = -1 (default). Alternatively, this variable may be set to any positive integer up to the number of available CPUs. 
 
-## Advanced Description
+`BOOTSTRAP_ITERS` (default: 2500) speficies the number of bootstrapped curves to calculate. Higher numbers of bootstrap iterations will produce more reliable confidence intervals and curves, but correspondingly, this will take more computational time. For best results, this value should be no lower than 500. 
 
-Because the numerical optimiztion of many dose-response curves is somewhat computationally expensive, the program saves fitted curve parameters by pickling. 
+As discussed in the Advanced Description, the bootstrapped live/dead probabilities are created using beta distributions, since the live count out of the total count is binomial in nature. Because the posterior distribution is a beta distribution, the user is given some choice of prior through the variable `BETA_PRIOR`. Beta variables are then drawn from the distribution Beta(live count + `BETA_PRIOR`, dead count + `BETA_PRIOR`). Setting `BETA_PRIOR` to 0.5 is equivalent to Jeffreys' prior, while using 0.0 (default) is roughly equivelent to Heldane's prior. To avoid the [sunrise paradox][4], the `BETA_PRIOR_0` value can be set to provide a seperate beta prior when the live count or dead count is equal to 0 (default: 0.25). To prevent undefined values, `BETA_PRIOR_0` takes on a minimum value of sqrt(machine_epsilon).
+
+The `RHO` parameter is used to set correlation between the beta variables contained within a single replicate. See Advanced Description for more details. This paramter should be set to between -0.25 and roughly 0.6 (default: 0.10). 
+
+`CI_METHOD` specifies the method of confidence interval calculation. The default behavior (`HPDI`) is to calculate the highest posterior density interval (this is also the optimal CI in terms of decision theory). Setting this value to ``equal-tailed`` will produce credible intervals with equal probabilities of being above or below the median, and equal tail weights. This behavior is set for the credible intervals for both graphing and for the output .csv file. 
+
 
 ### Files
 
@@ -52,3 +66,4 @@ Because the numerical optimiztion of many dose-response curves is somewhat compu
 [1]: https://matplotlib.org/stable/gallery/color/named_colors.htm
 [2]: https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html
 [3]: https://matplotlib.org/stable/api/markers_api.html#module-matplotlib.markers
+[4]: https://en.wikipedia.org/wiki/Sunrise_problem
