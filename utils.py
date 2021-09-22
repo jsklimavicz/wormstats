@@ -107,15 +107,6 @@ def calc_HPDI_CI(kernel_density = None, kernel_sample = None, CI_level = 0.95, n
             y = kernel_density.score_samples(x)
             y = np.exp(y)
             spline = CubicSpline(x.squeeze(), y)
-            
-
-            # xm = kernel_density.sample(200)
-            # fig, ax = plt.subplots()
-            # plt.plot(xm,  np.exp(kernel_density.score_samples(xm)), '.g')
-            # plt.plot(xm, spline(xm), '.r')
-            # plt.show()
-
-    print("finding min")
 
     def errfn(p, CI_level, spline, lb, ub):
         # print(p)
@@ -131,6 +122,5 @@ def calc_HPDI_CI(kernel_density = None, kernel_sample = None, CI_level = 0.95, n
     def root_finders(x, spline, p): return spline(x) - p 
     minval = root(root_finders, x0=lb, args=(spline, p)).x
     maxval = root(root_finders, x0=ub, args=(spline, p)).x
-    print(np.array([l1, l2, l3]) )
-    print(np.array([minval, med, maxval]) )
+
     return np.array([minval, med, maxval]) 
