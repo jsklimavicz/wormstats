@@ -8,13 +8,6 @@ The output data is in .csv value, and includes estimates and credible intervals 
 
 Images of each dose-response curve, the curve credible interval, the actual live/dead data, and the bayesian credible intervals for the actual data are produced. 
 
-## Advanced Description
-
-
-
-Because the numerical optimization of many dose-response curves is somewhat computationally expensive, the program saves fitted curve parameters by pickling. 
-
-
 ## User-Specified Values
 
 The program accepts user-specified values in the file ``analysis_config.txt``. The allowed variables are broken down into groups roughly as follows.
@@ -54,9 +47,10 @@ The `RHO` parameter is used to set correlation between the beta variables contai
 `CI_METHOD` specifies the method of confidence interval calculation. The default behavior (`HPDI`) is to calculate the highest posterior density interval (this is also the optimal CI in terms of decision theory). Setting this value to ``equal-tailed`` will produce credible intervals with equal probabilities of being above or below the median, and equal tail weights. This behavior is set for the credible intervals for both graphing and for the output .csv file. 
 
 
+
 ### Analysis Options
 
-The user may specify one or more desired values for LC estimations as a comma-seperated list using the variable `LC_VALUES`. The default values (`50, 90`) results in the estimation of an LC50 and an LC90, and the corresponding credible intervals. The credible interval size is specified using `LC_CI` (default: 95). Relative potencies can also be calculated with respect to a reference compound (defined using `REFERENCE_COMPOUND`, default: malathion). The width of the credible interval for the potency ratio is specified using `REL_POT_CI`.
+The user may specify one or more desired values for LC estimations as a comma-seperated list using the variable `LC_VALUES`. The default values (`50, 90`) results in the estimation of an LC50 and an LC90, and the corresponding credible intervals. The credible interval size is specified using `LC_CI` (default: 95). Relative potencies can also be calculated with respect to a reference compound (defined using `REFERENCE_COMPOUND`, default: malathion). The width of the credible interval for the potency ratio is specified using `REL_POT_CI`. `REL_POT_TO_REF` modifies how the relative potencies are calculated. Relative potencies are determined compared to the `REFERENCE_COMPOUND` (e.g., if `REL_POT_TO_REF` is set to `True`, then values greater than 1 mean that the potency of the compound is **lower** than the `REFERENCE_COMPOUND`, and if set to `False`,then values greater than 1 mean that the potency of the compound is **greater** than the `REFERENCE_COMPOUND`). It should be notes that if the credible interval contains the value 1 for a compound, then the potency of that compound is not significantly different from the `REFERENCE_COMPOUND`.
  
 ## Files
 This packages contains the following files:
@@ -66,9 +60,6 @@ This packages contains the following files:
 - `corr_beta.py` generates the correlated random beta variables for bootstrapping purposes. 
 - `utils.py` contains several useful functions, including the function that creates the options dictionary from `analysis_config.txt`.
 - `analysis_config.txt` is used to set the user-chosen parameters. 
-
-
-
 
 
 
