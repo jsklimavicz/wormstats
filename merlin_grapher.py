@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
+import os
 
 class MerlinGrapher:
 	'''
@@ -22,12 +23,6 @@ class MerlinGrapher:
 				self.data["ub"], 
 				color = self.options["CURVE_CI_COLOR"],
 				alpha = self.options["ALPHA"] if "ALPHA" in self.options else 0.5)
-		#Best fit line.
-		if "x" in self.data and "line" in self.data and self.options["PLOT_LINE"]: 
-			self.ax.plot(self.data["x"], 
-				self.data["line"], 
-				c = self.options["LINE_COLOR"], 
-				ls = self.options["LINE_STYLE"])
 		#Data points.
 		if "conc" in self.data and "probs" in self.data and self.options["PLOT_DATA_POINTS"]:
 			conc = self.data["conc"].copy()
@@ -39,12 +34,18 @@ class MerlinGrapher:
 				mfc = self.options["POINT_COLOR"], 
 				ls = 'None')
 			#Error bars. 
-			if "error_bars" in self.data and self.options["ERROR_BARS"]:
+			if "error_bars" in self.data and self.options["PLOT_ERROR_BARS"] and self.options["ERROR_BAR_CUTOFF"] > self.data["n_trials"]:
 				self.ax.errorbar(x = conc, 
 					y = self.data["probs"], 
 					yerr = self.data["error_bars"], 
 					ecolor = self.options["POINT_COLOR"],
 					ls = 'None')
+		#Best fit line.
+		if "x" in self.data and "line" in self.data and self.options["PLOT_LINE"]: 
+			self.ax.plot(self.data["x"], 
+				self.data["line"], 
+				c = self.options["LINE_COLOR"], 
+				ls = self.options["LINE_STYLE"])
 
 	def set_labels(self, title):
 		'''
@@ -73,6 +74,16 @@ class MerlinGrapher:
 			elif label < 1./4.: xticklabels[i] = "{:.3f}".format(label)
 			else: xticklabels[i] = str(label) 
 		return xticks, xticklabels
-		
 
+		
+	def save_plot(self, name, image_dir, *args, pdf = True, pdf_dir = None, close_after = True, **kwargs):
+		filename = name + ".png"
+		png_path = os.path.join(image_dir, filename)
+		plt.savefig(png_path)
+		if pdf:
+			if pdf_dir is None: pdf_dir = os.path.join(image_dir, "pdf")
+			pdf_path = os.path.join(pdf_dir, filename + ".pdf")
+			plt.savefig(pdf_path, format='pdf')
+		if close_after: plt.close()
+		return
 

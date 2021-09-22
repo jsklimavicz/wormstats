@@ -1,12 +1,13 @@
 \documentclass[11pt, letterpaper]{article}
-\usepackage{amsmath, amssymb, gensymb, bm, amsthm}
+\usepackage{amsmath, amssymb, gensymb, bm, amsthm, bbm}
 \usepackage[left=1in, right=1in, top=1in, bottom=1in]{geometry}
 \newcommand{\mbb}[1]{\mathbb{#1}}
 \newcommand{\mc}[1]{\mathcal{#1}}
 \newcommand{\Beta}{\text{Beta}}
 \newcommand{\Bin}{\text{Bin}}
 \hyphenation{mel-an-o-gast-er}
-
+\numberwithin{equation}{section}
+\newtheorem{theorem}{Theorem}
 \makeatletter
 \renewcommand*\env@matrix[1][\arraystretch]{%
   \edef\arraystretch{#1}%
@@ -20,30 +21,27 @@
 %\renewcommand\qedsymbol{$\leftthumbsup$}
 
 \begin{document}
-\title{Dose-Response Curve Fitting for the Project Merlin Bioassay}
+\title{Data Analysis for the Merlin Bioassay}
 \date{\today}
 \author{James Klimavicz}
 \maketitle
 
 \section{Introduction}
-\subsection{General Information}
-A single unit of the Merlin bioassay comprises of a 96-well microplate in which \textit{Drosophila melanogaster} L1 larvae are reared in a liquid medium containing nominally known concentrations of a test compound. The eight rows of the plate allow for testing of up to eight different compounds, and each compound is tested at (generally) ten different concentrations using two-fold serial dilutions.
+\subsection{Assay Background}
+A single unit of the Merlin bioassay comprises of a 96-well microplate in which roughly 10 to 15 \textit{Drosophila melanogaster} L1 larvae are reared in a liquid medium containing nominally known concentrations of a test compound. The eight rows of the plate allow for testing of up to eight different compounds, and each compound is tested at (generally) ten different concentrations using two-fold serial dilutions, and a set of controls are also run. After an incubation period in the treated media, the number of living larvae ($a_i$) and dead larvae ($d_i$) is determined for each well $i$.
 
-Each compound of interest (herein, the compound) will eventually be tested on $m>1$ plates for the purpose of replicates. Each plate $j$ contains $n_j$ wells typically 10) dosed with the compound; with $m$ plates, we therefore have $n = \sum_{j=1}^m n_j$ wells to consider. Each well $n_i$ contains the compound in a concentration of $y_i$, and at the end of the assay, contains $a_i$ alive larvae and $d_i$ dead larvae. 
+Our goal is to use the results of multiple replicates of this assay to produce robust dose-response curves, calculate curve errors, determing credible intervals for data points, and find LC$_{50}$ values and relative potenencies. 
 
-Our interest is in fitting a dose-response curve to this data, using the survival in a well, $s_i = \frac{a_i}{a_i+d_i}$, as a response variable to the concentration of the compound. We use the logistic curve 
-\begin{align*}
-s(x) &= \frac{1}{\left(1+e^{b_0 + b_1x}\right)^{b_2}},
-\end{align*}
-where $s(x)$ is the estimated survival at concentration $e^x = c$ (that is, $x = \log c$ for some concentration $c$), and $\bm b = (b_0, b_1, b_2)$ are curve parameters. When $b_2 =1$, we end up with the two-parameter logistic curve 
-\begin{align*}
-s(x) &= \frac{1}{1+e^{b_0 + b_1x}},
-\end{align*}
-while we otherwise have the three parameter logistic curve.
+\subsection{Dose-Response Curve Background}
+We wish to fit a logistic curve to the data, relating the logarithm of the concentration of compound as our independent variable, to the probability of survival (the dependent variable). For this, we will use the generalized logisitic curve, $$s(x) = L + \frac{U - L}{\left(1 + Q e^{-Bx}\right)^{1/\nu}},$$ where $L$ is the lower horizontal asymptote, $U$ is the upper horizontal asymptote, $Q$ is related to $y(0)$, $B$ is the growth rate, and $\nu$ is a shape asymmetry parameter. For the purposes of our bioassay, if we treat $y(x)$ as the survival propability at concentration $x$, then we can simplify and reparameterize as
 
-Under traditional methods, we would use nonlinear least squares to fit the points $$(x_1, s_1), (x_2, s_2), \dots, (x_n, s_n)$$ to the curve $s = f(x, \bm b)$, while minimizing the sum of squares of the residuals $$S = \sum_{i=1}^n \left(s_i - f(x_i, \bm b) \right)^2.$$ If desired, we can weight the residuals based on how many larvae are in a well, on the basis that wells with more larvae ought to be considered more reliable; in this case, we would have $$S = \sum_{i=1}^n W_i\left(s_i - f(x_i, \bm b) \right)^2,$$
-where $W_i = (a_i+d_i)$, a weighting equal to the total number of larvae in the well, and inversely proportional to the error variance of a binomial random variable. Then we have $$ \hat{\bm b} = \arg \min_{\bm b} \sum_{i=1}^n W_i\left(s_i - f(x_i, \bm b) \right)^2,$$ which can be found using the usual optimization methods. 
+\begin{align}
+s(x) &= \frac{b_2}{\left(1+e^{b_0 + b_1x}\right)^{b_3}}, \label{eqn:loglogit}
+\end{align}
+where $b_2$ is related the background control survival rate (equal to 1 if there is 100\% survival, $b_3$ is the shape asymmetry parameter, $b_1$ is the growth rate, and $b_0$ is related to behavior at $x=1/b_1$. Further simplifications of equation \ref{eqn:loglogit} can be made by setting one or both of $b_2$ or $b_3$ to 1, and these cases are treated \textit{vide infra}.
 
+
+\section{Bootstrapping}
 \subsection{Beginning of the Bayesian Framework}
 In our assay, $a_i$ and $d_i$ are estimated by the program I wrote that analyzes the platereader images. Because these values are probabilistic estimates, they are not confined the non-zero integers, and instead can take on any non-negative real value. While this can present an issue for a true binomial distribution, we will be using Bayesian inference methods, and this is not a problem. Instead, $a_i$ and $d_i$ represent the evidence in the Bayesian framework, and we will use weakly informative or uninformative priors to drive our inference. 
 
@@ -105,6 +103,26 @@ and so $\bm P_k$ is diagonally dominant. By the Gershgorin Circle theorem, all t
 $$ \text{eigen} \left(\bm \Sigma\right) = \bigcup_{k=1}^m \text{eigen}\left(\bm P_k\right),$$
 and thus  $\bm \Sigma$ is positive definite.\qedhere
 \end{proof}
+
+\subsection{General Information}
+
+
+Each compound of interest (herein, the compound) will eventually be tested on $m>1$ plates for the purpose of replicates. Each plate $j$ contains $n_j$ wells (typically 10) dosed with the compound; with $m$ plates, we therefore have $n = \sum_{j=1}^m n_j$ wells to consider. Each well $n_i$ contains the compound in a concentration of $y_i$, and at the end of the assay, contains $a_i$ alive larvae and $d_i$ dead larvae. 
+
+Our interest is in fitting a dose-response curve to this data, using the survival in a well, $s_i = \frac{a_i}{a_i+d_i}$, as a response variable to the concentration of the compound. We use the logistic curve 
+\begin{align*}
+s(x) &= \frac{1}{\left(1+e^{b_0 + b_1x}\right)^{b_2}},
+\end{align*}
+where $s(x)$ is the estimated survival at concentration $e^x = c$ (that is, $x = \log c$ for some concentration $c$), and $\bm b = (b_0, b_1, b_2)$ are curve parameters. When $b_2 =1$, we end up with the two-parameter logistic curve 
+\begin{align*}
+s(x) &= \frac{1}{1+e^{b_0 + b_1x}},
+\end{align*}
+while we otherwise have the three parameter logistic curve.
+
+Under traditional methods, we would use nonlinear least squares to fit the points $$(x_1, s_1), (x_2, s_2), \dots, (x_n, s_n)$$ to the curve $s = f(x, \bm b)$, while minimizing the sum of squares of the residuals $$S = \sum_{i=1}^n \left(s_i - f(x_i, \bm b) \right)^2.$$ If desired, we can weight the residuals based on how many larvae are in a well, on the basis that wells with more larvae ought to be considered more reliable; in this case, we would have $$S = \sum_{i=1}^n W_i\left(s_i - f(x_i, \bm b) \right)^2,$$
+where $W_i = (a_i+d_i)$, a weighting equal to the total number of larvae in the well, and inversely proportional to the error variance of a binomial random variable. Then we have $$ \hat{\bm b} = \arg \min_{\bm b} \sum_{i=1}^n W_i\left(s_i - f(x_i, \bm b) \right)^2,$$ which can be found using the usual optimization methods. 
+
+
 \section{Bayesian Curve Fitting}
 \subsection{Two-Parameter Logistic Curve}
 We first note that the complement to the logistic curve $$y(x, \bm b) = \frac{1}{1+\exp(b_0+b_1x)} $$ is 
@@ -339,12 +357,21 @@ where
 \section{Appendix}
 \subsection{Larger permissible values of $\rho$ in covariance matrix}
 In section \ref{sect:sigma}, we proved that in the covariance matrix $$\bm \Sigma = \bigoplus^m_{k=1} \bm P_k$$
+
 with 
-$$\bm P_{k_{i,j}}  = \begin{cases}
-1 & \text{if } i = j \\
-\rho \cdot 2 ^{1-|i-j|} & \text{if } i \neq j 
-\end{cases}$$
-for some $\rho \in (0.25,0.25)$, and alluded to the fact that larger bounds on $\rho$ were permissible. We shall now prove this. 
+\begin{align}
+\bm P_{k_{i,j}}  = \begin{cases}
+1 & \text{if } i = j \leq n \\
+\rho \cdot 2 ^{1-|i-j|} & \text{if } i \neq j, i \leq n
+\end{cases} \label{eqn:Pkj}
+\end{align}
+
+for $\bm P_k \in \mathbb R^{n\times n}$ and some $\rho \in (0.25,0.25)$, and alluded to the fact that larger bounds on $\rho$ were permissible. In particular, we claim the following.
+
+\begin{theorem}
+As $n \to \infty$, the matrix defined by equation \ref{eqn:Pkj} is positive-definite for $\rho \in [-0.25, 0.75]$.
+\end{theorem}
+
 \begin{proof}
 First, we design matrix $A_n \in \mbb R ^{n\times n}$ such that 
 \begin{align*}
@@ -353,7 +380,11 @@ b & \text{if } i = j \\
 x ^{|i-j|} & \text{if } i \neq j 
 \end{cases} 
 \end{align*} 
-We note that if $b = \rho ^{-1}$, and if $x = 1/2$, then $\bm P_k = \rho x^{-1} A_n$, and thus for fixed dilution ratio $x$, we can find the full range of $b$ that gives positive definite $A_n$, and thence the values of $\rho$ that give positive definite $\bm P_k$.\footnote{If $\rho < 0$, then we are looking for a negative-definite $A_n$, to produce a positive definite $\bm P_k$, since all eigenvalues are multiplied by $\rho x^{-1}$. }
+We note that if $b = \rho ^{-1}$, then 
+\begin{align}
+\bm P_k = \rho x^{-1} A_n, \label{eqn:PtoA}
+\end{align} 
+and thus for fixed dilution ratio $x$, we can find the full range of $b$ that gives positive definite $A_n$, and thence the values of $\rho$ that give positive definite $\bm P_k$.\footnote{If $\rho < 0$, then we are looking for a negative-definite $A_n$, to produce a positive definite $\bm P_k$, since all eigenvalues are multiplied by $\rho x^{-1}$. }
 
 
 First, we find the recursive formula for $D_n$, the determinant of $A_n$.
@@ -459,13 +490,32 @@ D_n &= \frac{b - B}{\sqrt{D}}A^n + \frac{A - b}{\sqrt{D}}B^n \\
 &\qquad\qquad\qquad + \frac{-b + (b-2)x^2 +\sqrt{D}}{2\sqrt{D}}\left(\frac{b + (b-2)x^2 - \sqrt{D}}{2}\right)^n.
 \end{align*}
 When $x=1/2$, we then have 
+\begin{align}
+D_n &=\frac{\frac{3b + 2}{4}+ \frac{1}{4}D^\prime}{\frac{2}{4}D^\prime}\left(\frac{\frac{5b - 2}{4} +\frac{1}{4}D^\prime}{2}\right)^n +  \frac{-\frac{3b + 2}{4} +\frac{1}{4}D^\prime}{\frac{2}{4}D^\prime}\left(\frac{\frac{5b - 2}{4}  - \frac{1}{4}D^\prime}{2}\right)^n \nonumber \\
+&= \frac{1}{2D^\prime}\left[ \left(D^\prime + 3b + 2 \right)\left(\frac{5b - 2 + D^\prime}{8}\right)^n +\left(D^\prime - 3b - 2 \right)\left(\frac{5b - 2 - D^\prime}{8}\right)^n  \right] \nonumber\\
+&= \frac{1}{2^{3n+1}D^\prime}\left[ \left(D^\prime+ 3b + 2 \right)\left(5b - 2 + D^\prime\right)^n +\left(D^\prime - 3b - 2 \right)\left(5b - 2 - D^\prime\right)^n  \right], \label{eqn:Dn}
+\intertext{where} \nonumber
+D^\prime&= \sqrt{9b^2 + 12b - 12}.\nonumber
+\end{align}
+If we are interested in the limiting case as $n \to \infty$, we require $D_n = 0$, so we must solve 
 \begin{align*}
-D_n &=\frac{\frac{3b + 2}{4}+ \sqrt{D^\prime}}{2\sqrt{D^\prime}}\left(\frac{\frac{5b - 2}{4} +\sqrt{D^\prime}}{2}\right)^n +  \frac{-\frac{3b + 2}{4} +\sqrt{D^\prime}}{2\sqrt{D^\prime}}\left(\frac{\frac{5b - 2}{4}  - \sqrt{D^\prime}}{2}\right)^n \\
-&= \frac{1}{8\sqrt{D^\prime}}\left[ \left(4\sqrt{D^\prime} + 3b + 2 \right)\left(\frac{5b - 2 + 4\sqrt{D^\prime}}{8}\right)^n +\left(4\sqrt{D^\prime} - 3b - 2 \right)\left(\frac{5b - 2 - 4\sqrt{D^\prime}}{8}\right)^n  \right] \\
-&= \frac{1}{2^{-(3+3n)}\sqrt{D^\prime}}\left[ \left(4\sqrt{D^\prime} + 3b + 2 \right)\left(5b - 2 + 4\sqrt{D^\prime}\right)^n +\left(4\sqrt{D^\prime} - 3b - 2 \right)\left(5b - 2 - 4\sqrt{D^\prime}\right)^n  \right],
-\intertext{where}
-D^\prime&= \frac{9b^2}{16} + \frac{3b}{4} -\frac{3}{4}. \qedhere
+0 &= \lim_{n \to \infty} \left[ \left(D^\prime+ 3b + 2 \right)\left(5b - 2 + D^\prime\right)^n +\left(D^\prime - 3b - 2 \right)\left(5b - 2 - D^\prime\right)^n  \right].
 \end{align*}
+In particular, we note that the limit is equal to 0 in the following cases:
+\begin{align}
+0 &= D^\prime+ 3b + 2  = D^\prime - 3b - 2 \label{eqn:1} \\
+0 &= 5b - 2 + D^\prime = 5b - 2 - D^\prime \label{eqn:2} \\
+0 &= D^\prime+ 3b + 2  = 5b - 2 - D^\prime \label{eqn:3} \\
+0 &= D^\prime - 3b - 2  = 5b - 2 + D^\prime\label{eqn:4} 
+\end{align}
+We note that in equations \ref{eqn:1} and \ref{eqn:2}, we end up with the solution $D^\prime = - D^\prime$, which requires
+\begin{align*}
+0 &= D^\prime\\
+&= 3b^2 + 4b -4, 
+\end{align*}
+so $b = -2$ or $b = 2/3$. For equations \ref{eqn:3} and  \ref{eqn:4}, it is easy to show that there is no solution to $D^\prime+ 3b + 2 = 0$, $5b - 2 - D^\prime =0$, or $D^\prime - 3b - 2 =0$, while $5b - 2 + D^\prime=0$ has the solution $b=1$, and so there are no values of $b$ that meet the dule requirements of equations \ref{eqn:3} and  \ref{eqn:4}.
+
+Next we note that $D^\prime= \sqrt{9b^2 + 12b - 12}$ has real solutions in the domain $(-\infty, -2] \cup [2/3, \infty)$. Additionally, equation \ref{eqn:PtoA} specifies the relation between matrix $A_n$, for which equation \ref{eqn:Dn} was derived, to the covariance matrix $\bm P_k$. Specifically, we note that the eigenvalues of $A_n$ are exactly equal to $x\rho^{-1}$ times the eigenvalues of $\bm P_k$, and as $n \to \infty$, the permissible values of $\rho$ are equal to $x$ times the inverse values of $ {(-\infty, -2] \cup [2/3, \infty)}$. In particular, when $x = 1/2$, we get $\rho \in [-1/4, 3/4]$.
 
 \end{proof}
 \end{document}

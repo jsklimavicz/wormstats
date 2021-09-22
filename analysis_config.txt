@@ -1,46 +1,10 @@
 ###################################################
-#                Required Parameters              #
+#                 Saving Options                  #
 ###################################################
-ARCHIVE_DIR=/home/jklimavicz/Documents/Merlin_Images
-#IMG_DIR=/home/jklimavicz/Documents/platereader_test
-OUT_DIR=/home/jklimavicz/Documents/test_output
-
-###################################################
-#                 General Options                 #
-###################################################
-#Number of cpu processes to use. Default is -1, which uses all available CPUs 
-#for computation (most parallel). Setting this valueto one makes the 
-#computation single-threaded. Internal check is performed to make sure this 
-#number is not set higher than the number of CPUs available. 
-NCPU = -1
-
-#BOOTSTRAP_ITERS is the number of bootstraping iterations for data generation. 
-#Higher numbers provide better estimates of bootstrapped confidence intervals, 
-#but takes longer to run. Suggested values are 500 to 10 000.
-BOOTSTRAP_ITERS = 1000
-
-#RHO is an approximate factor to provide correlation in bootstrapped random 
-#beta variables. RHO should be in the interval (-0.25, 0.5). Higher values are 
-#associated with greater positive correlation between wells, while negative 
-#values give negative correlation between wells. Note that correlation falls 
-#off with distance between wells. See documentation for details. 
-RHO = 0.10
-
-#SCALE is a factor that allows for control of the beta distribution for 
-#generation of random variables from the prior for bayesian curve fitting. Note
-#that when SCALE = 0.5, this is equivalent to using Jeffreys' prior. When 
-#SCALE = 0, this is using and approximation of Heldane's prior (scale is set to
-#sqrt(machine epsilon) to prevent division by 0).
-SCALE = 0.0
-
-#Method for calculating confidence intervals. Implemented methods are "even-
-#tailed" or "HPDR" (default) (highest density probability region)
-CI_METHOD = "even-tailed"
-
-#number of x points for the plots. Higher numbers will give smoother curves, 
-#but makes the data larger to store. 
-N_POINTS=151
-
+IMAGE_DIR=/home/jklimavicz/Documents/Merlin_Images
+OUTPUT_DIR=/home/jklimavicz/Documents/platereader_test
+ARCHIVE_DIR=/home/jklimavicz/Documents/test_output
+INPUT_PATH=
 
 ###################################################
 #                 Graphing Options                #
@@ -58,6 +22,10 @@ LINE_COLOR = black
 #https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html
 LINE_STYLE = solid
 
+#number of x points for the plots. Higher numbers will give smoother curves, 
+#but makes the data larger to store. 
+N_POINTS=151
+
 ################### DATA POINTS ###################
 #Plot individual data points?
 PLOT_DATA_POINTS = True
@@ -71,18 +39,23 @@ POINT_COLOR = black
 MARKER_STYLE = .
 
 #Should error bars be plotted for each point?
-ERROR_BARS=True
+PLOT_ERROR_BARS=True
 
 #Credible interval size represented by each point's CI. ERROR_BAR_CI = 80 means
 #that the error bars represents the 80% credible interval. 
 ERROR_BAR_CI = 80
+
+#Number of trials for a compound after which error bars are not included in the
+#graph even if ERROR_BARS=True. Intended to prevent graphs from getting too 
+#crowded with lots of data. 
+ERROR_BAR_CUTOFF = 10
 
 #If jitter is true, then data points are randomly shifted by up to jitter 
 #factor to prvent data overlap.
 JITTER=True
 
 #JITTER_FACTOR should be a float in the range [0, 0.5].
-JITTER_FACTOR=0.1
+JITTER_FACTOR=0.15
 
 ################### CURVE ERROR ###################
 #Plot the error region?
@@ -97,6 +70,41 @@ CURVE_CI_COLOR = lightgrey
 
 #Width of bootstrapped confidence interval for the curve. 
 CURVE_CI = 95
+
+###################################################
+#              Data-Fitting Options               #
+###################################################
+#Number of cpu processes to use. Defa++ult is -1, which uses all available CPUs 
+#for computation (most parallel). Setting this valueto one makes the 
+#computation single-threaded. Internal check is performed to make sure this 
+#number is not set higher than the number of CPUs available. 
+NCPU = -1
+
+#BOOTSTRAP_ITERS is the number of bootstraping iterations for data generation. 
+#Higher numbers provide better estimates of bootstrapped confidence intervals, 
+#but takes longer to run. Suggested values are 500 to 10 000.
+BOOTSTRAP_ITERS = 2500
+
+#RHO is an approximate factor to provide correlation in bootstrapped random 
+#beta variables. RHO should be in the interval (-0.25, 0.5). Higher values are 
+#associated with greater positive correlation between wells, while negative 
+#values give negative correlation between wells. Note that correlation falls 
+#off with distance between wells. See documentation for details. 
+RHO = 0.10
+
+#BETA_PRIOR is a factor that allows for control of the beta distribution for 
+#generation of random variables from the prior for bayesian curve fitting. Note
+#that when BETA_PRIOR = 0.5, this is equivalent to using Jeffreys' prior. When 
+#BETA_PRIOR = 0, this is using and approximation of Heldane's prior (scale is 
+#set to sqrt(machine epsilon) to prevent division by 0). BETA_PRIOR_0 allows
+#for differential behavior when the live count or the dead count is equal to 0.
+BETA_PRIOR = 0.0
+BETA_PRIOR_0 = 0.25
+
+#Method for calculating confidence intervals. Implemented methods are "even-
+#tailed" or "HPDR" (default) (highest density probability region)
+CI_METHOD = HPDI
+
 
 ###################################################
 #                 Analysis Options                #
@@ -115,3 +123,9 @@ REL_POT_CI = 95
 
 #Compound for which relative potencies are given. 
 REFERENCE_COMPOUND=malathion
+
+#Sets which direction relative potencies are calculated. If REL_POT_TO_REF is 
+#True, then values of relative potency greater than 1 are **less** potent than
+#the REFERENCE_COMPOUND. If False, then relative potencies greater than 1 are
+#**more** potent than REFERENCE_COMPOUND.
+REL_POT_TO_REF = True
