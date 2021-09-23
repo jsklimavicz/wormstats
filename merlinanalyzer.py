@@ -82,6 +82,7 @@ class MerlinAnalyzer:
 				#update dictionaries
 				for k, v in self.options.items():
 					self.cmpd_data[cmpd].options[k] = v
+					self.cmpd_data[cmpd].curve_data.options[k] = v
 
 
 		if new_datafile is not None:
@@ -141,6 +142,7 @@ class MerlinAnalyzer:
 
 		@utils.fix_num_output
 		def format_lc_val(val):
+			# print(val)
 			if val < 1e-2 or val >1e3: 
 				return f"{val:.2e}"
 			else: return f"{val:.3g}"
@@ -149,10 +151,13 @@ class MerlinAnalyzer:
 			return '"[' + format_lc_val(ci1) +", "+ format_lc_val(ci2) + ']"'
 
 		def format_LC_to_CSV(CI_array):
-			output = []
-			for line in CI_array:
+			def append_line(output, line):
 				output.append(format_lc_val(line[1]))
 				output.append(CI_to_string(line[0],line[2]))
+			output = []
+			if CI_array.ndim > 1:
+				for line in CI_array: append_line(output, line)
+			else: append_line(output, CI_array)
 			return output
 
 		output = []
@@ -163,13 +168,13 @@ class MerlinAnalyzer:
 			good_curve = True
 			#Check to make sure that the slope is positive enough
 			slope_info = cmpd.curve_data.get_slope_CI(CI_val = 0.95)
+
 			if slope_info[1] < 1.e-2:
 				comment += "Fitted slope is too shallow. "
 				good_curve = False
 
 			#Check to make sure that the LC50 value is close enough to the 
 			LC50_info = np.power(2.,cmpd.curve_data.get_LC50_CI(CI_val=0.95))
-			slope_info = cmpd.curve_data.get_slope_CI(CI_val=0.95) 
 			lc_vals = format_LC_to_CSV(cmpd.get_LC_CIs()) 
 			# print(cmpd_name, LC50_info[1], 2**(1 + cmpd.data["max_conc"]) ,  2**(cmpd.data["min_conc"] - 1))
 
@@ -180,11 +185,7 @@ class MerlinAnalyzer:
 				good_curve = False
 				
 			if good_curve:
-				rel_pot = self.compare_LC(cmpd1 = cmpd_name, 
-					cmpd2 = self.options['REFERENCE_COMPOUND'], 
-					LCval = self.options['LC_VALUES'],
-					CI = self.options['REL_POT_CI'],
-					n_bs = 100000)
+				rel_pot = self.compare_LC(cmpd = cmpd_name, n_bs = 100000)
 				rel_pot = format_LC_to_CSV(rel_pot)
 			else: 
 				lc_vals = ['NA'] * len(lc_vals)
@@ -198,6 +199,7 @@ class MerlinAnalyzer:
 				elif 'rows' in item.lower(): line.append(str(cmpd.data["n_trials"]))
 				elif item.lower() in 'slope': 
 					# print(cmpd_name, slope_info, format_lc_val(slope_info[1]))
+					# print(slope_info)
 					line.append(format_lc_val(slope_info[1]))
 				elif 'slope' in item.lower() and 'ci' in item.lower(): 
 					line.append(CI_to_string(slope_info[0], slope_info[2]))
@@ -251,32 +253,38 @@ class MerlinAnalyzer:
 		 			'Comments']
 		return header
 
-	def compare_LC(self, cmpd1, cmpd2, LC_val = np.array([0.5]), CI = 0.95, n_bs = 10000, *args, **kwargs):
+	def compare_LC(self, cmpd, n_bs = 100000, *args, **kwargs):
 		'''
 		Calculates relative potency using random samples from the kernel density of the LCx distribution for
 		cmpd1 and cmpd2.
 		'''
-		kernel1 = self.cmpd_data[cmpd1].curve_data.LC_kernel(LC_val = LC_val).sample(n_samples=n_bs)
-		kernel2 = self.cmpd_data[cmpd2].curve_data.LC_kernel(LC_val = LC_val).sample(n_samples=n_bs)
-		diff = kernel1 - kernel2 if self.options['REL_POT_TO_REF'] else kernel2 - kernel1
-		utils.calc_HPDI_CI(kernel_sample = diff, CI_level = 0.95)
-		exit()
-		lb = (1. - CI)/2.
-		ub = 1.-lb
-		quantiles = [lb, 0.5, ub]
-		vals = np.quantile(diff, quantiles, interpolation='linear', axis = 0)
+		cmpd_kernel = self.cmpd_data[cmpd].curve_data.LC_kernel(
+			LC_val = 1. - self.options['LC_VALUES']).sample(n_samples=n_bs)
+		ref_kernel= self.cmpd_data[self.options['REFERENCE_COMPOUND']].curve_data.LC_kernel(
+			LC_val = 1. - self.options['LC_VALUES']).sample(n_samples=n_bs)
+		diff = cmpd_kernel - ref_kernel if self.options['REL_POT_TO_REF'] else kernel2 - kernel1
+		func = utils.calc_ET_CI if self.options["CI_METHOD"].lower() in utils.ET_VARS else utils.calc_HPDI_CI
+		vals = func(diff, CI_level = self.options['REL_POT_CI'])
+
 		return np.power(2., vals).T
 
 	def full_process(self, 
 						new_datafile = None, 
 						key_file = None,
 						csv_outfile = None, 
-						archive_path = None,
-						image_dir = None, 
+						out_path = None,
 						*args, 
 						**kwargs):
-		self.merge_old_new(new_datafile, archive_path, key_file)
+		self.merge_old_new(new_datafile, out_path, key_file)
 		# self.process_compounds(*args, **kwargs)
+
+		image_dir = os.path.join(out_path, 'images')
+		pdf_dir = os.path.join(image_dir, 'pdf')
+
+		if not os.path.exists(image_dir):
+			os.makedirs(image_dir)
+		if not os.path.exists(pdf_dir):
+			os.makedirs(pdf_dir)
 
 		output_info = []
 
@@ -286,6 +294,7 @@ class MerlinAnalyzer:
 			cmpd.fit_data(options = self.options)
 			if image_dir: 
 				cmpd.make_plot()
+				# plt.show()
 				cmpd.plot.save_plot(cmpd_name, image_dir)
 
  
@@ -293,14 +302,5 @@ class MerlinAnalyzer:
 		body = self.generate_csv_data_lines(header)
 			
 		if csv_outfile: self.save_csv(csv_outfile, header, body, *args, **kwargs)
-		if archive_path: self.save_archive(archive_path, *args, **kwargs)
+		self.save_archive(out_path, *args, **kwargs)
 		
-
-if __name__ == "__main__":
-	MA = MerlinAnalyzer()
-	MA.full_process(new_datafile = "./input_stats.csv", 
-		key_file = "./key.csv", 
-		archive_path=".", 
-		csv_outfile = './output.csv', 
-		image_dir= "./images")
-
