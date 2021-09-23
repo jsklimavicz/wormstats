@@ -26,15 +26,11 @@ class Compound:
 		'''
 		for k, v in options.items(): self.options[k] = v
 		if self.curve_data is None: self.curve_data = CI_finder(**self.data, options = self.options)
-	def get_LC_CIs(self, LC_VALUES = None, LC_CI = None, **kwargs):
+	def get_LC_CIs(self):
 		'''
 		Calculates and returns confidence intervals for LC values. 
 		'''
-		p = self.curve_data.get_CIs(LC_VALUES = self.options['LC_VALUES'] if LC_VALUES is None else LC_VALUES,
-			LC_CI = self.options['LC_CI'] if LC_CI is None else LC_CI,
-			**kwargs
-			)
-		return p
+		return self.curve_data.get_CIs()
 	def make_plot(self):
 		'''
 		Generates a graph of the dose-response data. The graph is initiated in the CI_finder class plot_CIs method, 
@@ -44,7 +40,7 @@ class Compound:
 		self.plot = self.curve_data.plot_CIs()
 		self.plot.set_labels(title = self.data["name"])
 		self.plot.plot_data()
-		return self.plot.ax
+		# return self.plot.ax
 
 
 	def __add__(self, other):

@@ -10,6 +10,7 @@ from statistics import median, mean
 from sklearn.neighbors import KernelDensity
 from merlin_grapher import MerlinGrapher
 from time import time
+import utils
 
 def default_params_dict():
 	param_dict = {"BOOTSTRAP_ITERS": 1000,  
@@ -17,8 +18,8 @@ def default_params_dict():
 						"FIT_METHOD": 'BFGS', 
 						"BETA_PRIOR": 0.1, 
 						"RHO": 0.1,
-						"N_POINTS": 151,
-						"CI_METHOD": "HPDR"}
+						"N_POINTS": 151
+				 }
 	return param_dict
 
 class CI_finder:	
@@ -140,6 +141,27 @@ class CI_finder:
 		'''
 		return b[2]/(1.+ np.exp(b[0] + conc * b[1]))
 
+	def ll3_find_LC(self, quantiles):
+		'''
+		Given the list self.params of parameters from bootstrapping and the list of quantiles, this 
+		method returns the concentrations at which each of the quantiles is met. 
+		'''
+		quant2 = np.tile(np.array(quantiles), (len(self.params),1))
+		params = np.reshape(np.repeat(np.array(self.params[:,0:2]), len(quantiles)), 
+			(self.params[:,0:2].shape[0], self.params[:,0:2].shape[1], len(quantiles)))
+		return (np.log(1./quant2 - 1.)-params[:,0])/params[:,1]
+
+	#DECORATOR
+	def update_options(func, *args, **kwargs): 
+		'''
+		Decorator to update the options for this class if the options keyword is included. 
+		'''
+		def inner(*args, **kwargs):
+			if "options" in kwargs:
+				for k, v in options.items(): self.options[k] = v
+			func(*args, **kwargs)
+		return inner
+
 	def fit_curve(self, probs):
 		'''
 		Curve-fitting driver. 
@@ -218,7 +240,6 @@ class CI_finder:
 				self.params[iter_count,0:2] = res.x
 				self.params[iter_count,2] = 1.
 		
-
 	def get_point_error_bars(self, beta_probs):
 		'''
 		Calculates the error bars for each data point based on the beta variables from the bootstrap samples. 
@@ -250,7 +271,8 @@ class CI_finder:
 		concentration i and the f_i the value of the dose-response at i, and SS_{tot} = sum(y_i - y_bar)^2, 
 		with y_bar being the average response across all concentrations. 
 		'''
-		center_curve = np.quantile(self.points, 0.5, interpolation='linear', axis = 0)
+		# center_curve = np.quantile(self.points, 0.5, interpolation='linear', axis = 0)
+		center_curve = np.median(self.points, axis = 0)
 		spline = CubicSpline(self.x, center_curve)
 		spline_vals = spline(self.conc)
 		probs = self.live_count / (self.dead_count+self.live_count)
@@ -260,97 +282,53 @@ class CI_finder:
 		sum_of_square_nofit = sum((probs - mean(probs)) ** 2)
 		self.r2 = 1- sum_of_square_resids/sum_of_square_nofit
 
-
+	@update_options
 	def get_plot_CIs(self, quantiles = [.025, 0.5, 0.975], options=None):
 		'''
 		Driver for calculating the confidence intervals for the plot.
 		'''
 		if self.plot_quant is None: 
-			if options: self.update_options(options)
 			self.bootstrap_CIs()
 			self.calculate_curves()
-		self.plot_quant = np.quantile(self.points, quantiles, interpolation='linear', axis = 0)
-	
-	def ll3_find_LC(self, quantiles):
-		'''
-		Given the list self.params of parameters from bootstrapping and the list of quantiles, this 
-		method returns the conccentrations at which each of the quantiles is met. 
-		'''
-		quant2 = np.tile(np.array(quantiles), (len(self.params),1))
-		params = np.reshape(np.repeat(np.array(self.params[:,0:2]), len(quantiles)), 
-			(self.params[:,0:2].shape[0], self.params[:,0:2].shape[1], len(quantiles)))
-		return (np.log(1./quant2 - 1.)-params[:,0])/params[:,1]
+		self.plot_quant = utils.calc_ET_CI(self.points, CI_level = self.options["LC_CI"], resample = False)
 
-	def get_CIs(self, **kwargs):
+	def get_CIs(self):
 		'''
 		Driver for calculating dose-response intervals. 
 		'''
 		if self.params is None: self.bootstrap_CIs()
-		LC_VALUES = 1-kwargs["LC_VALUES"]
+		LC_VALUES = 1-self.options["LC_VALUES"]
 		EC_vals = self.ll3_find_LC(LC_VALUES)
-		alpha = 1. - kwargs["LC_CI"]
-		EC_CI = self.get_EC_CIs(EC_vals, alpha, **kwargs)
+		EC_CI = self.get_EC_CIs(EC_vals, self.options["LC_CI"])
+		# print(EC_CI)
+		# exit()
 		return np.power(2,EC_CI)
 
-	def get_EC_CIs(self, EC_vals, alpha, *args, **kwargs):
+	def get_EC_CIs(self, EC_vals, CI_val):
 		'''
 		Finds the confidence intervals for doses. 
 		'''
-		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
-		EC_val_summary = np.quantile(EC_vals, quantiles, interpolation='linear', axis = 0)
-		return np.transpose(EC_val_summary) if len(EC_val_summary.shape)>1 else EC_val_summary
+		func = utils.calc_ET_CI if self.options["CI_METHOD"].lower() in utils.ET_VARS else utils.calc_HPDI_CI
+		EC_val_summary = func(EC_vals, CI_level = CI_val)
+		# print(EC_val_summary)
+		return EC_val_summary.T if EC_val_summary.ndim>1 else EC_val_summary
 
-	# def EC_kernel(self, EC_val_list):
-	# 	'''
-	# 	Generates a KernelDensity object from an EC_val list.
-	# 	'''
-	# 	return KernelDensity(kernel ='gaussian', bandwidth = 0.5).fit(EC_val_list)
+	def get_LC50_CI(self, CI_val=0.95): return  (- self.get_param_CI(0, CI_val)/self.get_param_CI(1, CI_val)).reshape((-1))
+	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val).reshape((-1))
+	def get_baseline_mort_CI(self, CI_val=0.95): return self.get_param_CI(2, CI_val).reshape((-1))
+
+	def get_param_CI(self, parameter, CI_val):
+		if self.params is None: self.bootstrap_CIs()
+		# print(self.options["CI_METHOD"].lower())
+		func = utils.calc_ET_CI if self.options["CI_METHOD"].lower() in utils.ET_VARS else utils.calc_HPDI_CI
+		return func(self.params[:,parameter], CI_level = CI_val)
 
 	def LC_kernel(self, LC_val = 0.5):
 		'''
 		Generates a KernelDensity object from an LC value.
 		'''
-
 		vals = self.ll3_find_LC(quantiles = LC_val)
 		return KernelDensity(kernel ='gaussian', bandwidth = 0.5).fit(vals)
-
-	def errfn(self, p, alpha, kde):
-		from scipy import integrate
-		def fn(x):
-			x = np.array(x).reshape(1, -1)
-			pdf = np.exp(kde.score_samples(x))
-			return pdf if pdf > p else 0
-
-		lb = min(self.conc) - 10
-		ub = max(self.conc) + 10
-		prob = integrate.quad(fn, lb, ub, limit=200)[0]
-		return (prob + alpha - 1.)**2
-
-	def get_HPDR_CIs(self, EC_vals, alpha, *args, **kwargs):
-		from scipy.optimize import fmin
-		for val_iter in EC_vals.T:
-			val = np.reshape(val_iter, (len(val_iter),1))
-			kde = self.EC_kernel(val)
-			p = fmin(self.errfn, x0=0, args = (alpha, kde))
-		exit()
-
-	def get_HPDR_CIs(self, EC_vals, alpha, *args, **kwargs):
-		from scipy.optimize import fmin
-		for val_iter in EC_vals.T:
-			val = np.reshape(val_iter, (len(val_iter),1))
-			kde = self.EC_kernel(val)
-			p = fmin(self.errfn, x0=0, args = (alpha, kde))
-		exit()
-
-	def get_LC50_CI(self, CI_val=0.95): return  - self.get_param_CI(0, CI_val)/self.get_param_CI(1, CI_val)
-	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val)
-	def get_baseline_mort_CI(self, CI_val=0.95): return self.get_param_CI(2, CI_val)
-
-	def get_param_CI(self, parameter, CI_val):
-		if self.params is None: self.bootstrap_CIs()
-		alpha = 1. - CI_val
-		quantiles = np.array([alpha/2, 0.5, 1- alpha/2])
-		return np.quantile(self.params[:,parameter], quantiles, interpolation='linear', axis = 0)
 
 	def plot_CIs(self):
 		lb = (1 - self.options["CURVE_CI"])/2
@@ -368,9 +346,6 @@ class CI_finder:
 									options = self.options)
 		return merlin_plot
 
-	def update_options(self, options): 
-		for k, v in options.items(): self.options[k] = v
-	
 	def reset_curves(self):
 		'''
 		This function clears out the params, points, and CI lines to allow one do new bootstrapping.
@@ -378,28 +353,5 @@ class CI_finder:
 		self.params = None
 		self.points = None
 		self.plot_quant = None
-
-# def errfn(p, alpha, kde):
-# 	from scipy import integrate
-# 	def fn(x):
-# 		x = np.array(x).reshape(1, -1)
-# 		pdf = np.exp(kde.score_samples(x))
-# 		return pdf if pdf > p else 0
-# 	def get_bounds():
-# 		def fn(x):
-# 			x = np.array(x).reshape(1, -1)
-# 			pdf = np.exp(kde.score_samples(x))
-# 			return pdf - p
-# 		lb, ub = -10, 10
-# 		lb = fmin(fn, x0=lb)
-# 		ub = fmin(fn, x0=ub)
-# 		return lb, ub
-# 	lb, ub = get_bounds()
-# 	prob = integrate.quad(fn, lb, ub, limit=200)[0]
-# 	return (prob + alpha - 1.)**2
-
-
-# def get_HPDR_CIs(kde, alpha, *args, **kwargs):
-# 	return fmin(errfn, x0=0, args = (alpha, kde))
 
 

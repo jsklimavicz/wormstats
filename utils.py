@@ -7,6 +7,8 @@ from scipy.optimize import fmin, root
 import matplotlib.pyplot as plt
 from statistics import median
 
+ET_VARS = ["equal-tailed", "equal", "et", "even", "even-tailed"]
+
 def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'analysis_config.txt'):
     '''
     Reads in the configuration file 'analysis_config.txt' and converts the specified data to the appropriate type. 
@@ -33,6 +35,8 @@ def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'ana
                     elif val > 0.5: val = 0.4
             elif key in ['BOOTSTRAP_ITERS', 'N_POINTS', 'NCPU', 'ERROR_BAR_CUTOFF']: 
                 val = int(val)
+            elif key in ["CI_METHOD"]:
+                val = val.lower()
             config_dict[key] = val
     return config_dict
 
@@ -72,7 +76,7 @@ def default_config():
                     }
     return config_dict
 
-def fix_num_output(func):
+def fix_num_output(func, *args, **kwargs):
     def fix_scinot(*args, **kwargs):
         return func(*args,**kwargs).replace("e+0","e").replace("E+0","e").replace("e-0","e-").replace("E-0","e-").replace("e+","e")
     return fix_scinot
@@ -85,42 +89,118 @@ def check_library_change(cmpd_options, dict_options):
             changed = True
     return changed
 
-def calc_HPDI_CI(kernel_density = None, kernel_sample = None, CI_level = 0.95, n_samples = 500):
+# def calc_multimodal_HPDI_CI(kernel_density = None, kernel_sample = None, CI_level = 0.95, n_samples = 500):
+#     alpha = 1 - CI_level
+#     lb = alpha/2
+#     ub = 1- lb
+#     if kernel_density is None and kernel_sample is not None:
+#         kernel_density = KD(kernel='gaussian', bandwidth=0.5).fit(kernel_sample)
+#     # if kernel_sample 
+#     if kernel_density is not None:
+#         x = kernel_density.sample(100000)
+#         med = median(x)
+#         minx, maxx = np.quantile(x, [0.01, 0.99], interpolation='linear', axis = 0)
+#         l1, l2, l3 = np.quantile(x, [lb, 0.5, ub], interpolation='linear', axis = 0)
+#         ranx = max(x) - min(x)
+#         if ranx > 15: #Too big to give decent response curve.
+#             return np.quantile(x, [lb, 0.5, ub], interpolation='linear', axis = 0)
+#         else:
+#             lb, ub = minx - 1, maxx + 1
+#             x =  np.linspace(lb, ub, round(float(ranx)*15+1))
+#             y = kernel_density.score_samples(x)
+#             y = np.exp(y)
+#             spline = CubicSpline(x.squeeze(), y)
+
+#     def errfn(p, CI_level, spline, lb, ub):
+#         # print(p)
+#         def fn( x ): return spline(x) if spline(x) > p else 0
+
+#         prob = integrate.quad(fn, lb, ub,limit = 100)[0]
+#         return (prob - CI_level)**2
+
+#     p = fmin(errfn, x0=0.1, args=(CI_level, spline, lb, ub))[0]
+    
+#     def root_finders(x, spline, p): return spline(x) - p 
+#     minval = root(root_finders, x0=lb, args=(spline, p)).x
+#     maxval = root(root_finders, x0=ub, args=(spline, p)).x
+#     return np.array([minval, med, maxval]) 
+
+def CI_helper(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample = True):
+    def est_gaussian_kernel_bandwidth(data):
+        #Scott’s rule of thumb
+        bw = 1.06*np.std(data)*(len(data)**-0.2)
+        # print(bw)
+        return bw
+    n = len(kernel_sample)
+    if n < min_sample_size and resample:
+        if kernel_sample.ndim == 1 : kernel_sample = kernel_sample.reshape(-1, 1) 
+        bw = est_gaussian_kernel_bandwidth(kernel_sample)
+        kernel_density = KD(kernel='gaussian', bandwidth=bw).fit(kernel_sample)
+        sample = kernel_density.sample(min_sample_size)
+    else: sample = kernel_sample.squeeze()
+    return np.sort(sample, axis= 0)
+
+def calc_HPDI_CI(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample = True):
+    """
+    Internal method to determine the minimum interval of a given width
+    """
+    # print(kernel_sample)
+    # print("Provided sample")
+    # print("Length: ", len(kernel_sample), '; std dev: ', np.std(kernel_sample), "bw: ", 1.06*np.std(kernel_sample)*(len(kernel_sample)**-0.2))
+    # print(min(kernel_sample), *np.quantile(kernel_sample, [.025, 0.5, .975], interpolation='linear', axis = 0), max(kernel_sample))
+    kernel_sample = CI_helper(kernel_sample, 
+        CI_level = CI_level, 
+        min_sample_size = min_sample_size, 
+        resample = resample)
+    # print("Resampled sample")
+    # print("Length: ", len(kernel_sample), '; std dev: ', np.std(kernel_sample), "bw: ", 1.06*np.std(kernel_sample)*(len(kernel_sample)**-0.2))
+    # print(min(kernel_sample), *np.quantile(kernel_sample, [.025, 0.5, .975], interpolation='linear', axis = 0), max(kernel_sample))
+    # print(kernel_sample[:10])
+    # print(kernel_sample[-10:])
+
+    n = len(kernel_sample)
+    med = np.median(kernel_sample, axis = 0)
+    # print(med)
+
+    interval_idx_inc = int(np.floor(CI_level*n))
+    n_intervals = n - interval_idx_inc
+    # print(n_intervals)
+    # print(kernel_sample[interval_idx_inc:])
+    # print(kernel_sample[:n_intervals])
+
+    interval_width = kernel_sample[interval_idx_inc:] - kernel_sample[:n_intervals]
+    if len(interval_width) == 0: raise ValueError('Too few elements for interval calculation')
+
+    min_idx = np.argmin(interval_width, axis=0)
+    hdi_min = []
+    hdi_max = []
+    col = 0
+    if interval_width.ndim > 1:
+        for idx in min_idx:
+            # print(col, idx)
+            hdi_min.append(kernel_sample[idx,col])
+            hdi_max.append(kernel_sample[idx+interval_idx_inc,col])
+            col += 1
+    else:
+        hdi_min = kernel_sample[min_idx]
+        hdi_max = kernel_sample[min_idx+interval_idx_inc]
+    # print(hdi_min)
+    # print(np.array([hdi_min, med, hdi_max]) )
+    # exit()
+    return np.array([hdi_min, med, hdi_max]) 
+
+def calc_ET_CI(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample = True):
+    """
+    Internal method to determine the minimum interval of a given width
+    """
+    kernel_sample = CI_helper(kernel_sample, 
+        CI_level = CI_level, 
+        min_sample_size = min_sample_size, 
+        resample = resample)
+
     alpha = 1 - CI_level
     lb = alpha/2
     ub = 1- lb
-    if kernel_density is None and kernel_sample is not None:
-        kernel_density = KD(kernel='gaussian', bandwidth=0.5).fit(kernel_sample)
-    # if kernel_sample 
-    if kernel_density is not None:
-        x = kernel_density.sample(100000)
-        med = median(x)
-        minx, maxx = np.quantile(x, [0.01, 0.99], interpolation='linear', axis = 0)
-        print(lb, ub)
-        l1, l2, l3 = np.quantile(x, [lb, 0.5, ub], interpolation='linear', axis = 0)
-        ranx = max(x) - min(x)
-        if ranx > 15: #Too big to give decent response curve.
-            return np.quantile(x, [lb, 0.5, ub], interpolation='linear', axis = 0)
-        else:
-            lb, ub = minx - 1, maxx + 1
-            x =  np.linspace(lb, ub, round(float(ranx)*15+1))
-            y = kernel_density.score_samples(x)
-            y = np.exp(y)
-            spline = CubicSpline(x.squeeze(), y)
-
-    def errfn(p, CI_level, spline, lb, ub):
-        # print(p)
-        def fn( x ): 
-            # print(x, spline(x), p, spline(x) if spline(x) > p else 0)
-            return spline(x) if spline(x) > p else 0
-
-        prob = integrate.quad(fn, lb, ub,limit = 100)[0]
-        return (prob - CI_level)**2
-
-    p = fmin(errfn, x0=0.1, args=(CI_level, spline, lb, ub))[0]
     
-    def root_finders(x, spline, p): return spline(x) - p 
-    minval = root(root_finders, x0=lb, args=(spline, p)).x
-    maxval = root(root_finders, x0=ub, args=(spline, p)).x
+    return np.quantile(kernel_sample, [lb, 0.5, ub], interpolation='linear', axis = 0)
 
-    return np.array([minval, med, maxval]) 
