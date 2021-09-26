@@ -204,3 +204,23 @@ def calc_ET_CI(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample
     
     return np.quantile(kernel_sample, [lb, 0.5, ub], interpolation='linear', axis = 0)
 
+@fix_num_output
+def format_lc_val(val):
+    # print(val)
+    if val < 1e-2 or val >1e3: 
+        return f"{val:.2e}"
+    else: return f"{val:.3g}"
+
+def CI_to_string(ci1, ci2):
+    return '"[' + format_lc_val(ci1) +", "+ format_lc_val(ci2) + ']"'
+
+def format_LC_to_CSV(CI_array):
+    def append_line(output, line):
+        output.append(format_lc_val(line[1]))
+        output.append(CI_to_string(line[0],line[2]))
+    output = []
+    if CI_array.ndim > 1:
+        for line in CI_array: append_line(output, line)
+    else: append_line(output, CI_array)
+    return output
+
