@@ -292,17 +292,16 @@ class CI_finder:
 			self.calculate_curves()
 		self.plot_quant = utils.calc_ET_CI(self.points, CI_level = self.options["LC_CI"], resample = False)
 
-	def get_CIs(self):
+	def get_CIs(self, LC_VALUES = None, LC_CI = 0.95, log = False):
 		'''
 		Driver for calculating dose-response intervals. 
 		'''
 		if self.params is None: self.bootstrap_CIs()
-		LC_VALUES = 1-self.options["LC_VALUES"]
+		if LC_VALUES is None: LC_VALUES = 1-self.options["LC_VALUES"]
+		if LC_CI is None: LC_CI = self.options["LC_CI"]
 		EC_vals = self.ll3_find_LC(LC_VALUES)
 		EC_CI = self.get_EC_CIs(EC_vals, self.options["LC_CI"])
-		# print(EC_CI)
-		# exit()
-		return np.power(2,EC_CI)
+		return EC_CI if log else np.power(2.,EC_CI)
 
 	def get_EC_CIs(self, EC_vals, CI_val):
 		'''
@@ -310,10 +309,9 @@ class CI_finder:
 		'''
 		func = utils.calc_ET_CI if self.options["CI_METHOD"].lower() in utils.ET_VARS else utils.calc_HPDI_CI
 		EC_val_summary = func(EC_vals, CI_level = CI_val)
-		# print(EC_val_summary)
 		return EC_val_summary.T if EC_val_summary.ndim>1 else EC_val_summary
 
-	def get_LC50_CI(self, CI_val=0.95): return  (- self.get_param_CI(0, CI_val)/self.get_param_CI(1, CI_val)).reshape((-1))
+	def get_LC50_CI(self, CI_val=0.95, log = False): return  self.get_CIs(LC_VALUES = np.array([0.5]), LC_CI = 0.95, log=log).squeeze()
 	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val).reshape((-1))
 	def get_baseline_mort_CI(self, CI_val=0.95): return self.get_param_CI(2, CI_val).reshape((-1))
 
@@ -334,7 +332,6 @@ class CI_finder:
 		lb = (1 - self.options["CURVE_CI"])/2
 		ub = 1 - lb
 		self.get_plot_CIs(quantiles = [lb, 0.5, ub])
-		# print(self.options)
 		merlin_plot = MerlinGrapher(x = self.x, 
 									lb = self.plot_quant[0],
 									ub = self.plot_quant[2],
@@ -353,5 +350,3 @@ class CI_finder:
 		self.params = None
 		self.points = None
 		self.plot_quant = None
-
-
