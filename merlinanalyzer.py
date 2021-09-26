@@ -13,6 +13,7 @@ import hmac
 from merlin_grapher import MerlinGrapher
 import utils
 from time import time
+from latex_writer import LatexWriter
 
 class MerlinAnalyzer:
 
@@ -139,27 +140,6 @@ class MerlinAnalyzer:
 
 	
 	def generate_csv_data_lines(self, header):
-
-		@utils.fix_num_output
-		def format_lc_val(val):
-			# print(val)
-			if val < 1e-2 or val >1e3: 
-				return f"{val:.2e}"
-			else: return f"{val:.3g}"
-
-		def CI_to_string(ci1, ci2):
-			return '"[' + format_lc_val(ci1) +", "+ format_lc_val(ci2) + ']"'
-
-		def format_LC_to_CSV(CI_array):
-			def append_line(output, line):
-				output.append(format_lc_val(line[1]))
-				output.append(CI_to_string(line[0],line[2]))
-			output = []
-			if CI_array.ndim > 1:
-				for line in CI_array: append_line(output, line)
-			else: append_line(output, CI_array)
-			return output
-
 		output = []
 
 		for cmpd_name, cmpd in self.cmpd_data.items():
@@ -174,19 +154,19 @@ class MerlinAnalyzer:
 				good_curve = False
 
 			#Check to make sure that the LC50 value is close enough to the 
-			LC50_info = np.power(2.,cmpd.curve_data.get_LC50_CI(CI_val=0.95))
-			lc_vals = format_LC_to_CSV(cmpd.get_LC_CIs()) 
+			LC50_info = np.power(2.,cmpd.curve_data.get_LC50_CI(CI_val=0.95, log = True))
+			lc_vals = utils.format_LC_to_CSV(cmpd.get_LC_CIs()) 
 			# print(cmpd_name, LC50_info[1], 2**(1 + cmpd.data["max_conc"]) ,  2**(cmpd.data["min_conc"] - 1))
 
 			if LC50_info[1] > 2**(1 + cmpd.data["max_conc"]) or LC50_info[1]< 2**(cmpd.data["min_conc"] - 1) : 
 				# print(LC50_info[1], {lc_vals[0]}, cmpd.data["min_conc"]/2., 2*cmpd.data["max_conc"])
-				comment += f"Calculated LC50 ({format_lc_val(LC50_info[1])}) out of bounds. "
+				comment += f"Calculated LC50 ({utils.format_lc_val(LC50_info[1])}) out of bounds. "
 				lc_vals = ['NA'] * len(lc_vals)
 				good_curve = False
 				
 			if good_curve:
 				rel_pot = self.compare_LC(cmpd = cmpd_name, n_bs = 100000)
-				rel_pot = format_LC_to_CSV(rel_pot)
+				rel_pot = utils.format_LC_to_CSV(rel_pot)
 			else: 
 				lc_vals = ['NA'] * len(lc_vals)
 				rel_pot = ["NA"] * 2*len(self.options['LC_VALUES'])
@@ -198,11 +178,9 @@ class MerlinAnalyzer:
 				if item.lower() in 'compound': line.append(cmpd.data["name"])
 				elif 'rows' in item.lower(): line.append(str(cmpd.data["n_trials"]))
 				elif item.lower() in 'slope': 
-					# print(cmpd_name, slope_info, format_lc_val(slope_info[1]))
-					# print(slope_info)
-					line.append(format_lc_val(slope_info[1]))
+					line.append(utils.format_lc_val(slope_info[1]))
 				elif 'slope' in item.lower() and 'ci' in item.lower(): 
-					line.append(CI_to_string(slope_info[0], slope_info[2]))
+					line.append(utils.CI_to_string(slope_info[0], slope_info[2]))
 				elif self.options['REFERENCE_COMPOUND'].lower() in item.lower():
 					if rel_done: continue
 					else:
@@ -216,7 +194,7 @@ class MerlinAnalyzer:
 				elif "codes" in item.lower(): line.append('"' + ", ".join(list(set([i for i in cmpd.data["ids"]]))) + '"')
 				elif "date" in item.lower(): line.append('"' + ", ".join(list(set([i for i in cmpd.data["test_dates"]]))) + '"')
 				elif "bio" in item.lower(): line.append(f"{len(cmpd.data['test_dates'])}")
-				elif item == "R2": line.append(format_lc_val(cmpd.curve_data.r2))
+				elif item == "R2": line.append(utils.format_lc_val(cmpd.curve_data.r2))
 				elif "comment" in item.lower():
 					comment = comment if len(comment) == 1 else comment[1:len(comment)] 
 					line.append(comment)
@@ -273,34 +251,45 @@ class MerlinAnalyzer:
 						key_file = None,
 						csv_outfile = None, 
 						out_path = None,
+						pdf_outfile = 'graphs.pdf',
+						archive_path = None,
 						*args, 
 						**kwargs):
-		self.merge_old_new(new_datafile, out_path, key_file)
+		self.merge_old_new(new_datafile, archive_path, key_file)
 		# self.process_compounds(*args, **kwargs)
 
-		image_dir = os.path.join(out_path, 'images')
-		pdf_dir = os.path.join(image_dir, 'pdf')
+		image_dir = os.path.abspath(os.path.join(out_path, 'images'))
+		pdf_dir = os.path.abspath(os.path.join(image_dir, 'pdf'))
 
 		if not os.path.exists(image_dir):
 			os.makedirs(image_dir)
 		if not os.path.exists(pdf_dir):
 			os.makedirs(pdf_dir)
 
-		output_info = []
-
+		LW = LatexWriter(img_folder = pdf_dir)
 		# cmpd_ct = 0
 		for cmpd_name, cmpd in self.cmpd_data.items():
-			print(cmpd_name)
 			cmpd.fit_data(options = self.options)
-			if image_dir: 
-				cmpd.make_plot()
-				# plt.show()
-				cmpd.plot.save_plot(cmpd_name, image_dir)
+			cmpd.make_plot()
+			pdf_path = cmpd.plot.save_plot(cmpd_name, image_dir, pdf_dir = pdf_dir)
+			# print(cmpd.curve_data.get_LC50_CI(CI_val=0.95).squeeze())
+			lc50lb, lc50med, lc50ub = cmpd.curve_data.get_LC50_CI(CI_val=0.95).squeeze()
 
- 
+			if lc50med > 2**(1 + cmpd.data["max_conc"]) or lc50med< 2**(cmpd.data["min_conc"] - 1): lcTrue = False 
+			else: lcTrue = True 
+				
+			lc50med = utils.format_lc_val(lc50med)
+			lc50CI = '[' + utils.format_lc_val(lc50lb) + ', ' + utils.format_lc_val(lc50ub) + ']'
+			LW.make_cmpd_graph(image_dir = pdf_path, 
+				name = cmpd_name, 
+				lc50 = lc50med, 
+				lc50CI = lc50CI, 
+				lcTrue = lcTrue,
+				R2 = utils.format_lc_val(cmpd.curve_data.r2), 
+				reps = len(cmpd.data['test_dates']))
+		self.save_archive(archive_path, *args, **kwargs)
 		header = self.generate_csv_header()
 		body = self.generate_csv_data_lines(header)
-			
-		if csv_outfile: self.save_csv(csv_outfile, header, body, *args, **kwargs)
-		self.save_archive(out_path, *args, **kwargs)
-		
+		if csv_outfile: self.save_csv(os.path.abspath(os.path.join(out_path, csv_outfile)), header, body, *args, **kwargs)
+		LW.write_file(out_path = os.path.abspath(os.path.join(out_path, pdf_outfile+".tex")) )
+		# LW.make()
