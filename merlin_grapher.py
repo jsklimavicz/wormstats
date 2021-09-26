@@ -83,7 +83,6 @@ class MerlinGrapher:
 		if pdf:
 			if pdf_dir is None: pdf_dir = os.path.join(image_dir, "pdf")
 			pdf_path = os.path.join(pdf_dir, name + ".pdf")
-			plt.savefig(pdf_path, format='pdf')
+			plt.savefig(pdf_path, format='pdf',bbox_inches='tight', transparent=True)
 		if close_after: plt.close()
-		return
-
+		return pdf_path
