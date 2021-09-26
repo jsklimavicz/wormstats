@@ -83,7 +83,7 @@ NCPU = -1
 #BOOTSTRAP_ITERS is the number of bootstraping iterations for data generation. 
 #Higher numbers provide better estimates of bootstrapped confidence intervals, 
 #but takes longer to run. Suggested values are 500 to 10 000.
-BOOTSTRAP_ITERS = 2500
+BOOTSTRAP_ITERS = 500
 
 #RHO is an approximate factor to provide correlation in bootstrapped random 
 #beta variables. RHO should be in the interval (-0.25, 0.5). Higher values are 
