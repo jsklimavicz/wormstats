@@ -46,6 +46,8 @@ class MerlinAnalyzer:
 		return new_data
 
 	def read_new_data(self, filename, key_file):
+		print(filename)
+		print(key_file)
 		new_data = self.column_name_modifier(filename)
 		cmpd_data = deepcopy(new_data[new_data["Conc"] != 0])
 		ctrl_data = new_data[new_data["Conc"] == 0]
@@ -77,13 +79,18 @@ class MerlinAnalyzer:
 	def merge_old_new(self, new_datafile, archive_path, key_file):
 		if os.path.exists(os.path.join(archive_path,self.archivefilename)): 
 			self.cmpd_data = self.read_archive(archive_path)
+			# print(self.options)
 			for cmpd in self.cmpd_data.keys():
+				# print(self.cmpd_data[cmpd].options)
+
 				dict_change = utils.check_library_change(self.cmpd_data[cmpd].options, self.options)
-				if dict_change: self.cmpd_data[cmpd].curve_data.reset_curves()
+				# print(self.cmpd_data[cmpd].__dict__)
+				if dict_change: 
+					self.cmpd_data[cmpd] = self.cmpd_data[cmpd].reset_curves()
 				#update dictionaries
 				for k, v in self.options.items():
 					self.cmpd_data[cmpd].options[k] = v
-					self.cmpd_data[cmpd].curve_data.options[k] = v
+					# self.cmpd_data[cmpd].curve_data.options[k] = v
 
 
 		if new_datafile is not None:

@@ -25,6 +25,7 @@ class Compound:
 		Sets the curve data for this compounds using class CI_finder in module curvell
 		'''
 		for k, v in options.items(): self.options[k] = v
+		# print(self.options)
 		if self.curve_data is None: self.curve_data = CI_finder(**self.data, options = self.options)
 	def get_LC_CIs(self):
 		'''
@@ -42,6 +43,12 @@ class Compound:
 		self.plot.plot_data()
 		# return self.plot.ax
 
+	def reset_curves(self):
+		self.curve_data = None
+		CA = Compound(**self.data)
+		CA.options = self.options
+		return CA
+
 
 	def __add__(self, other):
 		'''
@@ -58,6 +65,8 @@ class Compound:
 			if k == "name": pass
 			elif k == "max_conc":
 				self.data[k] = max(self.data[k], other.data[k])
+			elif k == "min_conc":
+				self.data[k] = min(self.data[k], other.data[k])
 			elif k == "n_trials":
 				self.data[k] += 1
 			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
@@ -85,7 +94,7 @@ class Compound:
 		date, plate, row, ids = [list(d) for d in zip(*[[i for i in c.split('_')] for c in self.data["unique_plate_ids"]])]
 		self.data["ID"] = list(set(ids))
 		self.data["test_dates"] = list(set(date))
-		self.data["n_trials"] = list(set(self.data["n_trials"]))
+		self.data["n_trials"] = len(list(set(self.data["test_dates"])))
 		self.data["max_conc"] = max(self.data["conc"])
 		self.data["min_conc"] = min(self.data["conc"])
 		return Compound(**self.data)

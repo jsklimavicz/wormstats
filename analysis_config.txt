@@ -74,7 +74,7 @@ CURVE_CI = 95
 ###################################################
 #              Data-Fitting Options               #
 ###################################################
-#Number of cpu processes to use. Defa++ult is -1, which uses all available CPUs 
+#Number of cpu processes to use. Default is -1, which uses all available CPUs 
 #for computation (most parallel). Setting this valueto one makes the 
 #computation single-threaded. Internal check is performed to make sure this 
 #number is not set higher than the number of CPUs available. 
@@ -83,7 +83,7 @@ NCPU = -1
 #BOOTSTRAP_ITERS is the number of bootstraping iterations for data generation. 
 #Higher numbers provide better estimates of bootstrapped confidence intervals, 
 #but takes longer to run. Suggested values are 500 to 10 000.
-BOOTSTRAP_ITERS = 500
+BOOTSTRAP_ITERS = 2500 
 
 #RHO is an approximate factor to provide correlation in bootstrapped random 
 #beta variables. RHO should be in the interval (-0.25, 0.5). Higher values are 
@@ -101,9 +101,18 @@ RHO = 0.10
 BETA_PRIOR = 0.0
 BETA_PRIOR_0 = 0.25
 
-#Method for calculating confidence intervals. Implemented methods are "even-
-#tailed" or "HPDR" (default) (highest density probability region)
+#Method for calculating credible intervals. Implemented methods are 
+#"even-tailed" or "HPDI" (default) (highest density probability region). For
+#symmetrical, unimodal distributions, these credible intervals are 
+#equivalent. For asymmetrical distribution, HDPI will give narrower intervals.
 CI_METHOD = HPDI
+
+#Specifies the type of curve to fit. Options are 'll2' for a two-parameter log-
+#logistic curve; 'll3' for a three-parameter log-logisitic curve, 'auto' for 
+#producing ll3 or ll2 depending on what the limiting behavior at low 
+#concentrations is, or 'best' to use the AIC of the ll3 and ll2 curves to pick
+#the better-fitting curve. 
+CURVE_TYPE = ll2
 
 
 ###################################################
@@ -113,12 +122,12 @@ CI_METHOD = HPDI
 #example, "50, 90" would provide LC50 and LC90 values in the output. 
 LC_VALUES = 50, 90
 
-#Credible interval percent for LC values(e.g. 95 would provide a 95% confidence
+#Credible interval percent for LC values(e.g. 95 would provide a 95% credible
 #interval.)
 LC_CI = 95
 
 #Credible interval percent LC relative potency values (e.g. 95 would provide 
-#a 95% confidence interval.)
+#a 95% credible interval.)
 REL_POT_CI = 95
 
 #Compound for which relative potencies are given. 

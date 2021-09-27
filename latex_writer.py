@@ -30,9 +30,10 @@ class LatexWriter:
 		self.header = ["\\documentclass{article}"]
 		self.header.append("\\usepackage[letterpaper,left=0.75in, right=0.75in, top=0.75in, bottom=0.75in]{geometry}")
 		self.header.append("\\usepackage{graphicx}")
-		self.header.append("\\usepackage[font=scriptsize]{subcaption}")
+		self.header.append("\\usepackage[justification=centering]{subcaption}")
 		self.header.append("\\captionsetup[subfigure]{format=hang,justification=raggedright,singlelinecheck=false}")
 		self.header.append("\\usepackage{amsmath,amsthm,amsfonts,amssymb,mathtools}")
+		self.header.append("\\usepackage[mmddyyyy,HHmmss]{datetime}")
 		self.header.append(f"\\graphicspath{{{{{self.image_folder:s}}}}}")
 		self.header.append("\\setcounter{topnumber}{8}")
 		self.header.append("\\setcounter{bottomnumber}{8}")
@@ -40,9 +41,10 @@ class LatexWriter:
 		self.header.append("\\usepackage{fancyhdr}")
 		self.header.append("\\pagestyle{fancy}")
 		self.header.append("\\fancyhf{}")
-		self.header.append("\\fancyhead[L]{\\rightmark}")
+		self.header.append("\\fancyhead[L]{Merlin Bioassay Results}")
 		self.header.append("\\fancyfoot[C]{\\thepage}")
-		self.header.append("\\fancyhead[R]{\\today}")
+		# self.header.append("\\fancyhead[R]{\\today}")
+		self.header.append("\\fancyhead[R]{Compiled on \\today\\ at \\currenttime}")
 		self.header.append("\\renewcommand{\\headrulewidth}{0pt}")
 		self.header.append("\n\n")
 		self.header.append("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
@@ -130,13 +132,15 @@ class LatexWriter:
 		self.make(out_path)
 
 	def make(self, out_path):
-		# os.system(f'pdflatex --shell-escape {out_path:s} > pdf_tex.log 2>&1')
-		# os.system(f'pdflatex {out_path:s} > pdf_tex.log 2>&1')
+		pwd = os.getcwd()
+		os.chdir(os.path.dirname(out_path))
 		os.system(f'pdflatex -interaction=nonstopmode {out_path:s} --shell-escape  --enable-write18  > pdf_tex.log 2>&1')
-
+		os.chdir(pwd)
 
 	def latexify_name(self, name):
-		greek_letters = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'lambda']
+		greek_letters = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta', 'eta', 'theta', 'iota',
+							'kappa', 'lambda', 'mu', 'nu','xi', 'omicron','pi', 'rho', 'sigma','tau', 'upsilon',
+							'phi', 'chi','psi','omega']
 		mod = False
 		alpha_name = name
 		if name[:2].lower() == "s-": 
@@ -151,7 +155,7 @@ class LatexWriter:
 			for letter in greek_letters:
 				if name[:len(letter)+1].lower() == letter+'-': 
 					alpha_name = name[len(letter)+1:]
-					name = "$\\" + letter + '$' + alpha_name
+					name = "$\\" + letter + '$-' + alpha_name.capitalize()
 					mod = True
 					break
 		if len(name)< 5:
