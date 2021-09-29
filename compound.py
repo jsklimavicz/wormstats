@@ -20,6 +20,7 @@ class Compound:
 		self.options = {}
 		self.curve_data = None
 		self.plot = None
+
 	def fit_data(self, options):
 		'''
 		Sets the curve data for this compounds using class CI_finder in module curvell
@@ -27,11 +28,13 @@ class Compound:
 		for k, v in options.items(): self.options[k] = v
 		# print(self.options)
 		if self.curve_data is None: self.curve_data = CI_finder(**self.data, options = self.options)
+
 	def get_LC_CIs(self):
 		'''
 		Calculates and returns confidence intervals for LC values. 
 		'''
 		return self.curve_data.get_CIs()
+
 	def make_plot(self):
 		'''
 		Generates a graph of the dose-response data. The graph is initiated in the CI_finder class plot_CIs method, 
@@ -44,6 +47,9 @@ class Compound:
 		# return self.plot.ax
 
 	def reset_curves(self):
+		'''
+		Returns an object with curves reset. 
+		'''
 		self.curve_data = None
 		CA = Compound(**self.data)
 		CA.options = self.options
@@ -64,15 +70,15 @@ class Compound:
 		for k, v in self.data.items(): 
 			if k == "name": pass
 			elif k == "max_conc":
-				self.data[k] = max(self.data[k], other.data[k])
+				self.data[k] = max(self.data[k], other.data[k]) #reset the maximum conc.
 			elif k == "min_conc":
-				self.data[k] = min(self.data[k], other.data[k])
-			elif k == "n_trials":
-				self.data[k] += 1
+				self.data[k] = min(self.data[k], other.data[k]) #reset the minimum conc.
+			elif k == "n_trials": #need a set of unique identifiers
+				self.data[k] = len(set([*self.data[k], *other.data[k]]))
 			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
-				self.data[k] = np.array([*self.data[k], *other.data[k]])
+				self.data[k] = np.array([*self.data[k], *other.data[k]]) #append data in np array
 			else:
-				self.data[k] = [*self.data[k], *other.data[k]]
+				self.data[k] = [*self.data[k], *other.data[k]] #append data
 		return Compound(**self.data)
 
 	def __sub__(self, uid_list):
@@ -80,17 +86,12 @@ class Compound:
 		Overloaded - operator to remove entries in the Compound class based on unique ID, to make sure, e.g., that 
 		a specific trial is not included more than once. 
 		'''
-
-		# print(uid_list)
-		# print(self.data)
 		for k, v in self.data.items(): 
 			if k == "name": pass
 			elif k in ["conc", "live_count", "dead_count", "ctrl_mort"]:
 				self.data[k] = np.delete(self.data[k], np.array(uid_list))
 			elif k in ["column_IDs", "row_IDs", "plate_ids", "reps", "unique_plate_ids"]:
 				delete_multiple_element(self.data[k], uid_list)
-			# print(self.data[k])
-		# print(self.data)
 		date, plate, row, ids = [list(d) for d in zip(*[[i for i in c.split('_')] for c in self.data["unique_plate_ids"]])]
 		self.data["ID"] = list(set(ids))
 		self.data["test_dates"] = list(set(date))
@@ -101,7 +102,8 @@ class Compound:
 
 	def remove_duplicates(self, other):
 		'''
-		Finds 
+		Finds a list of duplicate unique identifiers (based on plate number, row, and date tested), and 
+		uses the indices of matched UIDs to use __sub__ to remove these data from the new data to be added. 
 		'''
 		dup_uniqueIDs = [uid for uid in other.data["unique_plate_ids"] if uid in self.data["unique_plate_ids"]]
 		# print(len(self.data['column_IDs']))
@@ -119,6 +121,9 @@ class Compound:
 		else: return other
 
 	def test_print(self):
+		'''
+		Prints data out in a nicer manner than self.__dict__ for debugging. 
+		'''
 		print(self.data["name"])
 		for k, v in self.data.items(): 
 			print("      ", k, ": ", "(", type(v), ")", v, sep = "")
@@ -140,6 +145,9 @@ class Compound:
 		return no_plt_cmpd
 
 def empty_cpmd_dict():
+	'''
+	Compound dictionary with necessary values with everything set to None. 
+	'''
 	return {"name": None, #name of the compound
 				"ids": None, #list of ID codes associated with the compound, of length number of data points.
 				"test_dates": None, #list of testing dates associated with the compound, of length number of data points.
@@ -157,6 +165,9 @@ def empty_cpmd_dict():
 				"unique_plate_ids": None}
 
 def delete_multiple_element(list_object, indices):
+	'''
+	Function to remove items from a list by index using the .pop function. 
+	'''
     indices = sorted(indices, reverse=True)
     for idx in indices:
         if idx < len(list_object):

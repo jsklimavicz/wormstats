@@ -16,7 +16,9 @@ from time import time
 from latex_writer import LatexWriter
 
 class MerlinAnalyzer:
-
+'''
+Class for processing all bioassay data.
+'''
 	archivefilename = "merlin_bioassay_archive_data.pickle"
 	picklesha1hash = ".picklehash"
 	sha_key = b"merlin-data"
@@ -26,16 +28,24 @@ class MerlinAnalyzer:
 		self.options = utils.parse_config_file()
 
 	def column_name_modifier(self, filename):
+		'''
+		Method to ensure all column names are consistent between files in case anyone makes minor modifications.
+		'''
 		new_data = pd.read_csv(filename, header = 0)
 		column_names = list(new_data.columns)
 		new_col_names = {}
 		for col_name in column_names:
+			#live counts
 			if col_name.lower() in ["alive", 'live', 'living']: new_col_names[col_name] = "Live"
+			#dead counts
 			elif col_name.lower() in ["dead"]: new_col_names[col_name] = "Dead"
+			#total count
 			elif col_name.lower() in ["total", 'count', 'sum']: new_col_names[col_name] = "Count"
+			#ID for a compound
 			elif col_name.lower() in ["ref.id", 'ref id', 'ref', 'id']: new_col_names[col_name] = "ID"
 			elif 'col' in col_name.lower(): new_col_names[col_name] = "Column"
 			elif 'row' in col_name.lower(): new_col_names[col_name] = "Row"
+			#Concentration of compound
 			elif col_name.lower() in ["ppm", "conc", "concentration"]: new_col_names[col_name] = "Conc"
 			elif col_name.lower() in ["plate"]: new_col_names[col_name] = "Plate"
 			elif col_name.lower() in ["rep"]: new_col_names[col_name] = "Rep"
@@ -46,25 +56,34 @@ class MerlinAnalyzer:
 		return new_data
 
 	def read_new_data(self, filename, key_file):
-		print(filename)
-		print(key_file)
-		new_data = self.column_name_modifier(filename)
+		'''
+		Driver to read in new data based on a .csv filename and a key.csv file
+		'''
+		new_data = self.column_name_modifier(filename) #check/change filenames
 		cmpd_data = deepcopy(new_data[new_data["Conc"] != 0])
-		ctrl_data = new_data[new_data["Conc"] == 0]
+		#Find control mortalities
+		ctrl_data = deepcopy(new_data[new_data["Conc"] == 0])
 		ctrl_live_sum = sum(np.array(ctrl_data["Live"].tolist()))
 		ctrl_dead_sum = sum(np.array(ctrl_data["Dead"].tolist()))
 		ctrl_ave_mort = (ctrl_dead_sum *1.)/(ctrl_dead_sum + ctrl_live_sum *1.)
 		cmpd_data["ctrl_mort"] = ctrl_ave_mort
+		#read key and merge in compound names
 		if key_file is not None: key = self.read_key(key_file)
 		cmpd_data = cmpd_data.merge(key, how='left', on='ID')
+		#Remove any rows with missing count or compound data.
 		cmpd_data.dropna(subset = ['Live', 'Dead', 'Compound'], inplace=True)
 		cmpd_data = cmpd_data[cmpd_data.Count != 0]
 		return self.process_compounds(cmpd_data)
 
 	def read_key(self, filename):
+		#Select important columns for merging key file
 		return self.column_name_modifier(filename)[["Compound", "ID", "Class"]]
 		
 	def read_archive(self, filepath):
+		'''
+		Reads in old pickle file after making sure that the file is not corrupted/modified
+		by means of using a sha1 hash
+		'''
 		with open(os.path.join(filepath, self.picklesha1hash), 'r') as file:
 			pickle_hash = file.read().strip()
 		with open(os.path.join(filepath, self.archivefilename), 'rb') as file:

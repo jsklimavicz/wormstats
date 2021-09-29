@@ -311,13 +311,20 @@ class CI_finder:
 		EC_val_summary = func(EC_vals, CI_level = CI_val)
 		return EC_val_summary.T if EC_val_summary.ndim>1 else EC_val_summary
 
+	#Returns the LC50 credible interval 
 	def get_LC50_CI(self, CI_val=0.95, log = False): return  self.get_CIs(LC_VALUES = np.array([0.5]), LC_CI = 0.95, log=log).squeeze()
+
+	#Returns a slope credible interval via self.get_param_CI.
 	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val).reshape((-1))
+
+	#Returns the baseline moretality estimate via self.get_param_CI.
 	def get_baseline_mort_CI(self, CI_val=0.95): return self.get_param_CI(2, CI_val).reshape((-1))
 
 	def get_param_CI(self, parameter, CI_val):
+		'''
+		Produces a confidence interval for a parameter based on the bootstrapped fits. 
+		'''
 		if self.params is None: self.bootstrap_CIs()
-		# print(self.options["CI_METHOD"].lower())
 		func = utils.calc_ET_CI if self.options["CI_METHOD"].lower() in utils.ET_VARS else utils.calc_HPDI_CI
 		return func(self.params[:,parameter], CI_level = CI_val)
 
@@ -329,6 +336,10 @@ class CI_finder:
 		return KernelDensity(kernel ='gaussian', bandwidth = 0.5).fit(vals)
 
 	def plot_CIs(self):
+		'''
+		Produces a MerlinGrapher object set up with options and data for plotted points, 
+		error bars, best fit line, and line CI. 
+		'''
 		lb = (1 - self.options["CURVE_CI"])/2
 		ub = 1 - lb
 		self.get_plot_CIs(quantiles = [lb, 0.5, ub])
