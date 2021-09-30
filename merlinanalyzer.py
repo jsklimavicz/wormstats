@@ -16,9 +16,9 @@ from time import time
 from latex_writer import LatexWriter
 
 class MerlinAnalyzer:
-'''
-Class for processing all bioassay data.
-'''
+	'''
+	Class for processing all bioassay data.
+	'''
 	archivefilename = "merlin_bioassay_archive_data.pickle"
 	picklesha1hash = ".picklehash"
 	sha_key = b"merlin-data"
@@ -181,10 +181,13 @@ Class for processing all bioassay data.
 
 			#Check to make sure that the LC50 value is close enough to the 
 			LC50_info = np.power(2.,cmpd.curve_data.get_LC50_CI(CI_val=0.95, log = True))
+			# print("The outer get_LC_CIs function", LC50_info)
+
 			lc_vals = utils.format_LC_to_CSV(cmpd.get_LC_CIs()) 
 			# print(cmpd_name, LC50_info[1], 2**(1 + cmpd.data["max_conc"]) ,  2**(cmpd.data["min_conc"] - 1))
 
-			if LC50_info[1] > 2**(1 + cmpd.data["max_conc"]) or LC50_info[1]< 2**(cmpd.data["min_conc"] - 1) : 
+			if LC50_info[1] > self.options['EXTRAPOLATION_FACTOR']**(1 + cmpd.data["max_conc"]) or \
+					LC50_info[1]< self.options['EXTRAPOLATION_FACTOR']**(cmpd.data["min_conc"] - 1) : 
 				# print(LC50_info[1], {lc_vals[0]}, cmpd.data["min_conc"]/2., 2*cmpd.data["max_conc"])
 				comment += f"Calculated LC50 ({utils.format_lc_val(LC50_info[1])}) out of bounds. "
 				lc_vals = ['NA'] * len(lc_vals)
@@ -301,7 +304,8 @@ Class for processing all bioassay data.
 			# print(cmpd.curve_data.get_LC50_CI(CI_val=0.95).squeeze())
 			lc50lb, lc50med, lc50ub = cmpd.curve_data.get_LC50_CI(CI_val=0.95).squeeze()
 
-			if lc50med > 2**(1 + cmpd.data["max_conc"]) or lc50med< 2**(cmpd.data["min_conc"] - 1): lcTrue = False 
+			if lc50med > self.options['EXTRAPOLATION_FACTOR']**(1 + cmpd.data["max_conc"]) or \
+				lc50med< self.options['EXTRAPOLATION_FACTOR']**(cmpd.data["min_conc"] - 1): lcTrue = False 
 			else: lcTrue = True 
 				
 			lc50med = utils.format_lc_val(lc50med)
@@ -312,10 +316,11 @@ Class for processing all bioassay data.
 				lc50CI = lc50CI, 
 				lcTrue = lcTrue,
 				R2 = utils.format_lc_val(cmpd.curve_data.r2), 
-				reps = len(cmpd.data['test_dates']))
+				bio_reps = len(cmpd.data['test_dates']),
+				tech_reps = str(cmpd.data["n_trials"]))
 		self.save_archive(archive_path, *args, **kwargs)
 		header = self.generate_csv_header()
 		body = self.generate_csv_data_lines(header)
 		if csv_outfile: self.save_csv(os.path.abspath(os.path.join(out_path, csv_outfile)), header, body, *args, **kwargs)
 		LW.write_file(out_path = os.path.abspath(os.path.join(out_path, pdf_outfile+".tex")) )
-		# LW.make()
+

@@ -55,7 +55,7 @@ ERROR_BAR_CUTOFF = 10
 JITTER=True
 
 #JITTER_FACTOR should be a float in the range [0, 0.5].
-JITTER_FACTOR=0.15
+JITTER_FACTOR=0.225
 
 ################### CURVE ERROR ###################
 #Plot the error region?
@@ -112,7 +112,7 @@ CI_METHOD = HPDI
 #producing ll3 or ll2 depending on what the limiting behavior at low 
 #concentrations is, or 'best' to use the AIC of the ll3 and ll2 curves to pick
 #the better-fitting curve. 
-CURVE_TYPE = ll2
+CURVE_TYPE = ll3
 
 
 ###################################################
@@ -138,3 +138,6 @@ REFERENCE_COMPOUND=malathion
 #the REFERENCE_COMPOUND. If False, then relative potencies greater than 1 are
 #**more** potent than REFERENCE_COMPOUND.
 REL_POT_TO_REF = True
+
+#Controls how far outside the data range that LC values can be extrapolated. 
+EXTRAPOLATION_FACTOR = 4

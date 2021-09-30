@@ -24,11 +24,15 @@ def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'ana
             (key, val) = line.split('=')
             key = key.strip()
             val = val.strip().strip('"').strip("'")
-            if key in ['PLOT_ERROR_BARS', 'JITTER', 'PLOT_LINE', 'PLOT_DATA_POINTS', 'PLOT_CURVE_ERROR', 'REL_POT_TO_REF']: 
+            if key in ['PLOT_ERROR_BARS', 'JITTER', 'PLOT_LINE', 
+                        'PLOT_DATA_POINTS', 'PLOT_CURVE_ERROR', 'REL_POT_TO_REF']: 
                 val = True if "true" in val.lower() else False
             elif key in ['LC_VALUES']: 
                 val = np.array([float(i.strip()) for i in val.split(",")])/100.
-            elif key in ['RHO', 'BETA_PRIOR', 'BETA_PRIOR_0', 'JITTER_FACTOR', 'ALPHA', 'CURVE_CI', 'LC_CI', 'ERROR_BAR_CI', 'REL_POT_CI']: 
+            elif key in ['RHO', 'BETA_PRIOR', 'BETA_PRIOR_0', 
+                        'JITTER_FACTOR', 'ALPHA', 'CURVE_CI', 
+                        'LC_CI', 'ERROR_BAR_CI', 'REL_POT_CI', 
+                        'EXTRAPOLATION_FACTOR']: 
                 val = float(val)/100. if key in ['CURVE_CI', 'LC_CI', 'REL_POT_CI', 'ERROR_BAR_CI'] else float(val)
                 if key == 'JITTER_FACTOR':
                     if val < 0: val = 0
@@ -72,7 +76,8 @@ def default_config():
                     'REL_POT_CI': 95,
                     'REFERENCE_COMPOUND': 'malathion',
                     'REL_POT_TO_REF': True, 
-                    'ERROR_BAR_CUTOFF': 10
+                    'ERROR_BAR_CUTOFF': 10,
+                    "EXTRAPOLATION_FACTOR": 2
                     }
     return config_dict
 

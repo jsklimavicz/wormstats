@@ -33,6 +33,7 @@ class Compound:
 		'''
 		Calculates and returns confidence intervals for LC values. 
 		'''
+		# print("The get_LC_CIs function", self.curve_data.get_CIs())
 		return self.curve_data.get_CIs()
 
 	def make_plot(self):
@@ -168,8 +169,8 @@ def delete_multiple_element(list_object, indices):
 	'''
 	Function to remove items from a list by index using the .pop function. 
 	'''
-    indices = sorted(indices, reverse=True)
-    for idx in indices:
-        if idx < len(list_object):
-            list_object.pop(idx)
-    return list_object
+	indices = sorted(indices, reverse=True)
+	for idx in indices:
+		if idx < len(list_object):
+			list_object.pop(idx)
+	return list_object

@@ -74,22 +74,25 @@ class LatexWriter:
 		self.end = ["\n\n"]
 		self.end.append("\\end{document}")
 
-	def make_cmpd_caption(self, name, lc50, lc50CI, R2, reps, lcTrue = True):
+	def make_cmpd_caption(self, name, lc50, lc50CI, R2, bio_reps, tech_reps, lcTrue = True):
 		'''
 		Creates the caption for each image. Retruns the caption as a string. 
 		**<Compound Name>** LC50: <LC50> ppm <CI>
-		<Bio reps> biological replicates; R^2: <R2> 
+		<bio_reps> biological reps; R^2: <R2> 
 		'''
 		caption = f'\\textbf{{{name}}}' 
 		if lcTrue: caption += ' LC$_{50}$: ' + f'{lc50} ppm {lc50CI} \\\\ \n'
 		else: caption += ' LC$_{50}$ cannot be estimated with the given data. \\\\ \n'
 
-		if reps == 1: caption += f'{reps} biological replicate; R$^2$: {R2}'
-		else: caption += f'{reps} biological replicates; R$^2$: {R2}'
+		if bio_reps == 1: caption += f'{bio_reps} biol. rep; '
+		else: caption += f'{bio_reps} biol. reps; '
+		if tech_reps == 1: caption += f'{tech_reps} tech. rep; '
+		else: caption += f'{tech_reps} tech. reps; '
+		caption += f'R$^2$: {R2}'
 		#TODO: add reference compound rel. potency
 		return caption
 
-	def make_cmpd_graph(self, image_dir, name, lc50, lc50CI, R2, reps, lcTrue = True):
+	def make_cmpd_graph(self, image_dir, name, lc50, lc50CI, R2, bio_reps, tech_reps, lcTrue = True):
 		'''
 		Portion that the graphic and caption for a given compound. Input values are 
 		from the compound info from curve fitting. 
@@ -99,7 +102,7 @@ class LatexWriter:
 		img_line = f"\\includegraphics[width = {{0.95\\textwidth}}]{{{image_dir:s}}}"
 		name, alpha_name = self.latexify_name(name)
 		print(alpha_name, name)
-		caption = f'\\caption*{{{self.make_cmpd_caption(name, lc50, lc50CI, R2, reps, lcTrue = lcTrue)}}}'
+		caption = f'\\caption*{{{self.make_cmpd_caption(name, lc50, lc50CI, R2, bio_reps, tech_reps, lcTrue = lcTrue)}}}'
 		graph_lines.append(f"   \\begin{{subfigure}}{{{image_width:.3f}\\textwidth}}")
 		graph_lines.append("      \\centering")
 		graph_lines.append("      "+img_line)

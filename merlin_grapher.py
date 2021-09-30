@@ -39,6 +39,7 @@ class MerlinGrapher:
 					y = self.data["probs"], 
 					yerr = self.data["error_bars"], 
 					ecolor = self.options["POINT_COLOR"],
+					elinewidth=0.5,
 					ls = 'None')
 		#Best fit line.
 		if "x" in self.data and "line" in self.data and self.options["PLOT_LINE"]: 

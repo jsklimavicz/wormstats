@@ -296,23 +296,30 @@ class CI_finder:
 		'''
 		Driver for calculating dose-response intervals. 
 		'''
+
 		if self.params is None: self.bootstrap_CIs()
 		if LC_VALUES is None: LC_VALUES = 1-self.options["LC_VALUES"]
 		if LC_CI is None: LC_CI = self.options["LC_CI"]
 		EC_vals = self.ll3_find_LC(LC_VALUES)
-		EC_CI = self.get_EC_CIs(EC_vals, self.options["LC_CI"])
+		EC_CI = self.get_EC_CIs(EC_vals, LC_CI)
+		# print("LC_CI:", LC_CI)
+		# print("LC_VALUES:", LC_VALUES)
+		# print("LC_VALUES:", np.power(2.,EC_CI))
 		return EC_CI if log else np.power(2.,EC_CI)
 
 	def get_EC_CIs(self, EC_vals, CI_val):
 		'''
 		Finds the confidence intervals for doses. 
 		'''
+		# print(self.options["CI_METHOD"])
 		func = utils.calc_ET_CI if self.options["CI_METHOD"].lower() in utils.ET_VARS else utils.calc_HPDI_CI
 		EC_val_summary = func(EC_vals, CI_level = CI_val)
 		return EC_val_summary.T if EC_val_summary.ndim>1 else EC_val_summary
 
 	#Returns the LC50 credible interval 
-	def get_LC50_CI(self, CI_val=0.95, log = False): return  self.get_CIs(LC_VALUES = np.array([0.5]), LC_CI = 0.95, log=log).squeeze()
+	def get_LC50_CI(self, CI_val=0.95, log = False): 
+
+		return  self.get_CIs(LC_VALUES = np.array([0.5]), LC_CI = 0.95, log=log).squeeze()
 
 	#Returns a slope credible interval via self.get_param_CI.
 	def get_slope_CI(self, CI_val=0.95): return self.get_param_CI(1, CI_val).reshape((-1))
