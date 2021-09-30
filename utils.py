@@ -90,6 +90,11 @@ def check_library_change(cmpd_options, dict_options):
     return changed
 
 # def calc_multimodal_HPDI_CI(kernel_density = None, kernel_sample = None, CI_level = 0.95, n_samples = 500):
+#     '''
+#     Determines HDPI CIs for multimodal distributions. Briefly, the kernel density function K(x)
+#     is approximated by a cubic spline, and a y-value is found at which the integral of the function
+#     [K`(x) = K(x) if K(x) > y else 0] is equal to 1-alpha. 
+#     '''
 #     alpha = 1 - CI_level
 #     lb = alpha/2
 #     ub = 1- lb
@@ -125,7 +130,8 @@ def check_library_change(cmpd_options, dict_options):
 #     maxval = root(root_finders, x0=ub, args=(spline, p)).x
 #     return np.array([minval, med, maxval]) 
 
-def CI_helper(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample = True):
+def CI_helper(kernel_sample, CI_level = 0.95, min_sample_size = 100000, resample = True):
+    
     def est_gaussian_kernel_bandwidth(data):
         #Scott’s rule of thumb
         IQR = np.quantile(kernel_sample, [0.25, 0.75], interpolation='linear', axis = 0)
@@ -136,33 +142,28 @@ def CI_helper(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample 
         # print("BW:", bw)
         return bw
     n = len(kernel_sample)
+    # print("Initial length:",len(kernel_sample))
     if n < min_sample_size and resample:
         if kernel_sample.ndim == 1 : kernel_sample = kernel_sample.reshape(-1, 1) 
         bw = est_gaussian_kernel_bandwidth(kernel_sample)
+        # print("BW:",bw)
         for i in range(len(bw)):
-            kernel_density = KD(kernel='gaussian', bandwidth=bw[i]).fit(kernel_sample)
+            # print(i, kernel_sample[:,i].reshape(-1, 1).shape)
+            kernel_density = KD(kernel='gaussian', bandwidth=bw[i]).fit(kernel_sample[:,i].reshape(-1, 1) )
             if i == 0: sample = kernel_density.sample(min_sample_size)
             else: sample = np.append(sample, kernel_density.sample(min_sample_size), axis = 1)
     else: sample = kernel_sample.squeeze()
+    
     return np.sort(sample, axis= 0)
 
-def calc_HPDI_CI(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample = True):
+def calc_HPDI_CI(kernel_sample, CI_level = 0.95, min_sample_size = 100000, resample = True):
     """
     Internal method to determine the minimum interval of a given width
     """
-    # print(kernel_sample)
-    # print("Provided sample")
-    # print("Length: ", len(kernel_sample), '; std dev: ', np.std(kernel_sample), "bw: ", 1.06*np.std(kernel_sample)*(len(kernel_sample)**-0.2))
-    # print(min(kernel_sample), *np.quantile(kernel_sample, [.025, 0.5, .975], interpolation='linear', axis = 0), max(kernel_sample))
     kernel_sample = CI_helper(kernel_sample, 
         CI_level = CI_level, 
         min_sample_size = min_sample_size, 
         resample = resample)
-    # print("Resampled sample")
-    # print("Length: ", len(kernel_sample), '; std dev: ', np.std(kernel_sample), "bw: ", 1.06*np.std(kernel_sample)*(len(kernel_sample)**-0.2))
-    # print(min(kernel_sample), *np.quantile(kernel_sample, [.025, 0.5, .975], interpolation='linear', axis = 0), max(kernel_sample))
-    # print(kernel_sample[:10])
-    # print(kernel_sample[-10:])
 
     n = len(kernel_sample)
     med = np.median(kernel_sample, axis = 0)
@@ -170,9 +171,6 @@ def calc_HPDI_CI(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resamp
 
     interval_idx_inc = int(np.floor(CI_level*n))
     n_intervals = n - interval_idx_inc
-    # print(n_intervals)
-    # print(kernel_sample[interval_idx_inc:])
-    # print(kernel_sample[:n_intervals])
 
     interval_width = kernel_sample[interval_idx_inc:] - kernel_sample[:n_intervals]
     if len(interval_width) == 0: raise ValueError('Too few elements for interval calculation')
@@ -190,9 +188,6 @@ def calc_HPDI_CI(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resamp
     else:
         hdi_min = kernel_sample[min_idx]
         hdi_max = kernel_sample[min_idx+interval_idx_inc]
-    # print(hdi_min)
-    # print(np.array([hdi_min, med, hdi_max]) )
-    # exit()
     return np.array([hdi_min, med, hdi_max]) 
 
 def calc_ET_CI(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample = True):
