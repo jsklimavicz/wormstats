@@ -1,0 +1,198 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex)
+ restricted \write18 enabled.
+entering extended mode
+(/home/jklimavicz/Documents/merlin_stats_out/graphs.tex
+LaTeX2e <2020-02-02> patch level 2
+L3 programming layer <2020-02-14>
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2019/12/20 v1.4l Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo))
+(/usr/share/texlive/texmf-dist/tex/latex/geometry/geometry.sty
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty)
+(/usr/share/texlive/texmf-dist/tex/generic/iftex/ifvtex.sty
+(/usr/share/texlive/texmf-dist/tex/generic/iftex/iftex.sty)))
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def)))
+(/usr/share/texlive/texmf-dist/tex/latex/caption/subcaption.sty
+(/usr/share/texlive/texmf-dist/tex/latex/caption/caption.sty
+(/usr/share/texlive/texmf-dist/tex/latex/caption/caption3.sty)))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsmath.sty
+For additional information on amsmath, use the `?' option.
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amstext.sty
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsgen.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsbsy.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsopn.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/amscls/amsthm.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amsfonts.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amssymb.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/mathtools/mathtools.sty
+(/usr/share/texlive/texmf-dist/tex/latex/tools/calc.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/mathtools/mhsetup.sty))
+(/usr/share/texlive/texmf-dist/tex/latex/datetime/datetime.sty
+(/usr/share/texlive/texmf-dist/tex/latex/etoolbox/etoolbox.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fmtcount.sty
+(/usr/share/texlive/texmf-dist/tex/latex/base/ifthen.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/xkeyval/xkeyval.sty
+(/usr/share/texlive/texmf-dist/tex/generic/xkeyval/xkeyval.tex
+(/usr/share/texlive/texmf-dist/tex/generic/xkeyval/xkvutils.tex)))
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fcprefix.sty
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fcnumparser.sty)))
+(/usr/share/texlive/texmf-dist/tex/latex/datetime/datetime-defaults.sty)
+
+! LaTeX Error: Unknown option `HHmmss' for package `datetime'.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.560 \if@dt@nodate
+                   
+) (/usr/share/texlive/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty)
+(/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdfmode.def)
+(./graphs.aux)
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+(/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+) (/usr/share/texlive/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+(/usr/share/texlive/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg))
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fc-english.def)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd)
+Underfull \hbox (badness 10000) in paragraph at lines 29--79
+[]$[]$$[]$
+
+Underfull \hbox (badness 10000) in paragraph at lines 29--79
+[]$$[]$
+[1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} </home/jklimavicz/Documen
+ts/merlin_stats_out/images/pdf/acetamiprid.pdf> </home/jklimavicz/Documents/mer
+lin_stats_out/images/pdf/aldicarb.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/aldicarb.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/aziphos-methyl.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/aziphos-methyl.pdf): PDF inclusion: multiple pdfs with page group includ
+ed in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/bifenthrin.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/bifenthrin.pdf): PDF inclusion: multiple pdfs with page group included i
+n a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbaryl.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/carbaryl.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbofuran.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/carbofuran.pdf): PDF inclusion: multiple pdfs with page group included i
+n a single page
+>]
+Underfull \hbox (badness 10000) in paragraph at lines 84--134
+[]$[]$$[]$
+
+Underfull \hbox (badness 10000) in paragraph at lines 84--134
+[]$$[]$
+[2 </home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorantraniliprole.
+pdf> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorfenapyr.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/chlorfenapyr.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorpyrifos.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/chlorpyrifos.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/clothianidin.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/clothianidin.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/cyantraniliprole.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/cyantraniliprole.pdf): PDF inclusion: multiple pdfs with page group incl
+uded in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/beta-cypermethrin.pdf
+
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/beta-cypermethrin.pdf): PDF inclusion: multiple pdfs with page group inc
+luded in a single page
+>]
+Underfull \hbox (badness 10000) in paragraph at lines 139--189
+[]$[]$$[]$
+
+Underfull \hbox (badness 10000) in paragraph at lines 139--189
+[]$$[]$
+[3 </home/jklimavicz/Documents/merlin_stats_out/images/pdf/DDT.pdf> </home/jkli
+mavicz/Documents/merlin_stats_out/images/pdf/ddvp.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/ddvp.pdf): PDF inclusion: multiple pdfs with page group included in a si
+ngle page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/fipronil.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/fipronil.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/imidacloprid.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/imidacloprid.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/malathion.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/malathion.pdf): PDF inclusion: multiple pdfs with page group included in
+ a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/naled.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/naled.pdf): PDF inclusion: multiple pdfs with page group included in a s
+ingle page
+>]
+Underfull \hbox (badness 10000) in paragraph at lines 194--236
+[]$[]$$[]$
+
+Underfull \hbox (badness 10000) in paragraph at lines 194--236
+[]$$[]$
+[4 </home/jklimavicz/Documents/merlin_stats_out/images/pdf/S-nicotine.pdf> </ho
+me/jklimavicz/Documents/merlin_stats_out/images/pdf/permethrin.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/permethrin.pdf): PDF inclusion: multiple pdfs with page group included i
+n a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/phorate.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/phorate.pdf): PDF inclusion: multiple pdfs with page group included in a
+ single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/propoxur.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/propoxur.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/pyethrum.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/pyethrum.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+>] (./graphs.aux) )
+(see the transcript file for additional information)</usr/share/texlive/texmf-d
+ist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></usr/share/texlive/texmf-dist/fon
+ts/type1/public/amsfonts/cm/cmbxti10.pfb></usr/share/texlive/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmmi9.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
+blic/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmr9.pfb>
+Output written on graphs.pdf (4 pages, 422532 bytes).
+Transcript written on graphs.log.

@@ -1,0 +1,758 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.5.5)  30 SEP 2021 16:24
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**/home/jklimavicz/Documents/merlin_stats_out/graphs.tex --shell-escape --enabl
+e-write18
+(/home/jklimavicz/Documents/merlin_stats_out/graphs.tex
+LaTeX2e <2020-02-02> patch level 2
+L3 programming layer <2020-02-14>
+(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2019/12/20 v1.4l Standard LaTeX document class
+(/usr/share/texlive/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2019/12/20 v1.4l Standard LaTeX file (size option)
+)
+\c@part=\count167
+\c@section=\count168
+\c@subsection=\count169
+\c@subsubsection=\count170
+\c@paragraph=\count171
+\c@subparagraph=\count172
+\c@figure=\count173
+\c@table=\count174
+\abovecaptionskip=\skip47
+\belowcaptionskip=\skip48
+\bibindent=\dimen134
+)
+(/usr/share/texlive/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2020/01/02 v5.9 Page Geometry
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/share/texlive/texmf-dist/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+
+(/usr/share/texlive/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2019/11/07 v1.0c TeX engine tests
+))
+\Gm@cnth=\count175
+\Gm@cntv=\count176
+\c@Gm@tempcnt=\count177
+\Gm@bindingoffset=\dimen135
+\Gm@wd@mp=\dimen136
+\Gm@odd@mp=\dimen137
+\Gm@even@mp=\dimen138
+\Gm@layoutwidth=\dimen139
+\Gm@layoutheight=\dimen140
+\Gm@layouthoffset=\dimen141
+\Gm@layoutvoffset=\dimen142
+\Gm@dimlist=\toks15
+)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2019/11/30 v1.2a Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2019/11/30 v1.4a Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+)
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 105.
+
+(/usr/share/texlive/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2018/01/08 v1.0l Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen143
+\Gin@req@width=\dimen144
+)
+(/usr/share/texlive/texmf-dist/tex/latex/caption/subcaption.sty
+Package: subcaption 2020/01/22 v1.3d Sub-captions (AR)
+
+(/usr/share/texlive/texmf-dist/tex/latex/caption/caption.sty
+Package: caption 2020/01/03 v3.4h Customizing captions (AR)
+
+(/usr/share/texlive/texmf-dist/tex/latex/caption/caption3.sty
+Package: caption3 2020/01/03 v1.8h caption3 kernel (AR)
+Package caption3 Info: TeX engine: e-TeX on input line 61.
+\captionmargin=\dimen145
+\captionmargin@=\dimen146
+\captionwidth=\dimen147
+\caption@tempdima=\dimen148
+\caption@indent=\dimen149
+\caption@parindent=\dimen150
+\caption@hangindent=\dimen151
+Package caption Info: Standard document class detected.
+)
+\c@caption@flags=\count178
+\c@continuedfloat=\count179
+)
+\c@subfigure=\count180
+\c@subtable=\count181
+)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2020/01/20 v2.17e AMS math features
+\@mathmargin=\skip49
+
+For additional information on amsmath, use the `?' option.
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amstext.sty
+Package: amstext 2000/06/29 v2.01 AMS text
+
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0 generic functions
+\@emptytoks=\toks16
+\ex@=\dimen152
+))
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+\pmbraise@=\dimen153
+)
+(/usr/share/texlive/texmf-dist/tex/latex/amsmath/amsopn.sty
+Package: amsopn 2016/03/08 v2.02 operator names
+)
+\inf@bad=\count182
+LaTeX Info: Redefining \frac on input line 227.
+\uproot@=\count183
+\leftroot@=\count184
+LaTeX Info: Redefining \overline on input line 389.
+\classnum@=\count185
+\DOTSCASE@=\count186
+LaTeX Info: Redefining \ldots on input line 486.
+LaTeX Info: Redefining \dots on input line 489.
+LaTeX Info: Redefining \cdots on input line 610.
+\Mathstrutbox@=\box45
+\strutbox@=\box46
+\big@size=\dimen154
+LaTeX Font Info:    Redeclaring font encoding OML on input line 733.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 734.
+\macc@depth=\count187
+\c@MaxMatrixCols=\count188
+\dotsspace@=\muskip16
+\c@parentequation=\count189
+\dspbrk@lvl=\count190
+\tag@help=\toks17
+\row@=\count191
+\column@=\count192
+\maxfields@=\count193
+\andhelp@=\toks18
+\eqnshift@=\dimen155
+\alignsep@=\dimen156
+\tagshift@=\dimen157
+\tagwidth@=\dimen158
+\totwidth@=\dimen159
+\lineht@=\dimen160
+\@envbody=\toks19
+\multlinegap=\skip50
+\multlinetaggap=\skip51
+\mathdisplay@stack=\toks20
+LaTeX Info: Redefining \[ on input line 2859.
+LaTeX Info: Redefining \] on input line 2860.
+)
+(/usr/share/texlive/texmf-dist/tex/latex/amscls/amsthm.sty
+Package: amsthm 2017/10/31 v2.20.4
+\thm@style=\toks21
+\thm@bodyfont=\toks22
+\thm@headfont=\toks23
+\thm@notefont=\toks24
+\thm@headpunct=\toks25
+\thm@preskip=\skip52
+\thm@postskip=\skip53
+\thm@headsep=\skip54
+\dth@everypar=\toks26
+)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Redeclaring math symbol \hbar on input line 98.
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+)
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/amssymb.sty
+Package: amssymb 2013/01/14 v3.01 AMS font symbols
+)
+(/usr/share/texlive/texmf-dist/tex/latex/mathtools/mathtools.sty
+Package: mathtools 2020/01/17 v1.23 mathematical typesetting tools
+
+(/usr/share/texlive/texmf-dist/tex/latex/tools/calc.sty
+Package: calc 2017/05/25 v4.3 Infix arithmetic (KKT,FJ)
+\calc@Acount=\count194
+\calc@Bcount=\count195
+\calc@Adimen=\dimen161
+\calc@Bdimen=\dimen162
+\calc@Askip=\skip55
+\calc@Bskip=\skip56
+LaTeX Info: Redefining \setlength on input line 80.
+LaTeX Info: Redefining \addtolength on input line 81.
+\calc@Ccount=\count196
+\calc@Cskip=\skip57
+)
+(/usr/share/texlive/texmf-dist/tex/latex/mathtools/mhsetup.sty
+Package: mhsetup 2017/03/31 v1.3 programming setup (MH)
+)
+LaTeX Info: Thecontrolsequence`\('isalreadyrobust on input line 129.
+LaTeX Info: Thecontrolsequence`\)'isalreadyrobust on input line 129.
+LaTeX Info: Thecontrolsequence`\['isalreadyrobust on input line 129.
+LaTeX Info: Thecontrolsequence`\]'isalreadyrobust on input line 129.
+\g_MT_multlinerow_int=\count197
+\l_MT_multwidth_dim=\dimen163
+\origjot=\skip58
+\l_MT_shortvdotswithinadjustabove_dim=\dimen164
+\l_MT_shortvdotswithinadjustbelow_dim=\dimen165
+\l_MT_above_intertext_sep=\dimen166
+\l_MT_below_intertext_sep=\dimen167
+\l_MT_above_shortintertext_sep=\dimen168
+\l_MT_below_shortintertext_sep=\dimen169
+)
+(/usr/share/texlive/texmf-dist/tex/latex/datetime/datetime.sty
+Package: datetime 2015/03/20 v2.60 Date Time Package
+
+(/usr/share/texlive/texmf-dist/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2019/09/21 v2.5h e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count198
+)
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fmtcount.sty
+Package: fmtcount 2020/01/30 v3.06
+
+(/usr/share/texlive/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
+)
+(/usr/share/texlive/texmf-dist/tex/latex/xkeyval/xkeyval.sty
+Package: xkeyval 2014/12/03 v2.7a package option processing (HA)
+
+(/usr/share/texlive/texmf-dist/tex/generic/xkeyval/xkeyval.tex
+(/usr/share/texlive/texmf-dist/tex/generic/xkeyval/xkvutils.tex
+\XKV@toks=\toks27
+\XKV@tempa@toks=\toks28
+)
+\XKV@depth=\count199
+File: xkeyval.tex 2014/12/03 v2.7a key=value parser (HA)
+))
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fcprefix.sty
+Package: fcprefix 2012/09/28
+
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fcnumparser.sty
+Package: fcnumparser 2017/06/15
+\fc@digit@counter=\count266
+))
+\c@padzeroesN=\count267
+\fc@tmpcatcode=\count268
+\@DT@modctr=\count269
+\@ordinalctr=\count270
+\@orgargctr=\count271
+\@strctr=\count272
+\@tmpstrctr=\count273
+\@DT@loopN=\count274
+\@DT@X=\count275
+)
+(/usr/share/texlive/texmf-dist/tex/latex/datetime/datetime-defaults.sty
+Package: datetime-defaults 2013/09/10
+)
+\@day=\count276
+\@month=\count277
+\@year=\count278
+\c@HOUR=\count279
+\c@HOURXII=\count280
+\c@MINUTE=\count281
+\c@TOHOUR=\count282
+\c@TOMINUTE=\count283
+\c@SECOND=\count284
+\currenthour=\count285
+\currentminute=\count286
+\currentsecond=\count287
+Package datetime Info: No datetime.cfg file found, using default settings on in
+put line 308.
+
+
+! LaTeX Error: Unknown option `HHmmss' for package `datetime'.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.560 \if@dt@nodate
+                   
+The option `HHmmss' was not declared in package `datetime', perhaps you
+misspelled its name. Try typing  <return>  to proceed.
+
+\@dtctr=\count288
+\dayofyear=\count289
+\dayofweek=\count290
+LaTeX Info: Redefining \today on input line 736.
+\dt@a=\toks29
+\dt@b=\toks30
+) (/usr/share/texlive/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty
+Package: fancyhdr 2019/01/31 v3.10 Extensive control of page headers and footer
+s
+\f@nch@headwidth=\skip59
+\f@nch@O@elh=\skip60
+\f@nch@O@erh=\skip61
+\f@nch@O@olh=\skip62
+\f@nch@O@orh=\skip63
+\f@nch@O@elf=\skip64
+\f@nch@O@erf=\skip65
+\f@nch@O@olf=\skip66
+\f@nch@O@orf=\skip67
+)
+(/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdfmode.def
+File: l3backend-pdfmode.def 2020-02-03 L3 backend support: PDF mode
+\l__kernel_color_stack_int=\count291
+\l__pdf_internal_box=\box47
+)
+(./graphs.aux)
+\openout1 = `graphs.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 25.
+LaTeX Font Info:    ... okay on input line 25.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 25.
+LaTeX Font Info:    ... okay on input line 25.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 25.
+LaTeX Font Info:    ... okay on input line 25.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 25.
+LaTeX Font Info:    ... okay on input line 25.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 25.
+LaTeX Font Info:    ... okay on input line 25.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 25.
+LaTeX Font Info:    ... okay on input line 25.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 25.
+LaTeX Font Info:    ... okay on input line 25.
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: letterpaper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(54.2025pt, 505.89pt, 54.2025pt)
+* v-part:(T,H,B)=(54.2025pt, 686.56499pt, 54.2025pt)
+* \paperwidth=614.295pt
+* \paperheight=794.96999pt
+* \textwidth=505.89pt
+* \textheight=686.56499pt
+* \oddsidemargin=-18.06749pt
+* \evensidemargin=-18.06749pt
+* \topmargin=-55.06749pt
+* \headheight=12.0pt
+* \headsep=25.0pt
+* \topskip=10.0pt
+* \footskip=30.0pt
+* \marginparwidth=65.0pt
+* \marginparsep=11.0pt
+* \columnsep=10.0pt
+* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+(/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count292
+\scratchdimen=\dimen170
+\scratchbox=\box48
+\nofMPsegments=\count293
+\nofMParguments=\count294
+\everyMPshowfont=\toks31
+\MPscratchCnt=\count295
+\MPscratchDim=\dimen171
+\MPnumerator=\count296
+\makeMPintoPDFobject=\count297
+\everyMPtoPDFconversion=\toks32
+) (/usr/share/texlive/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(/usr/share/texlive/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: End \AtBeginDocument code.
+
+(/usr/share/texlive/texmf-dist/tex/latex/fmtcount/fc-english.def
+File: fc-english.def 2016/01/12
+)
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/acetamiprid.pdf, id=1, 
+416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/acetamiprid.pdf Gr
+aphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/acetamiprid.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/acetamiprid.pdf  used on input line 31.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 34.
+
+
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Trying to load font information for U+msb on input line 34.
+
+
+(/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/aldicarb.pdf, id=2, 416
+.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/aldicarb.pdf Graph
+ic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/aldicarb.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/aldicarb.pdf  used on input line 39.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/aziphos-methyl.pdf, id=
+3, 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/aziphos-methyl.pdf
+ Graphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/aziphos-methyl.pdf>
+
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/aziphos-methyl.pdf  used on input line 48.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/bifenthrin.pdf, id=4, 4
+16.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/bifenthrin.pdf Gra
+phic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/bifenthrin.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/bifenthrin.pdf  used on input line 56.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbaryl.pdf, id=5, 416
+.70178pt x 326.62701pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbaryl.pdf Graph
+ic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbaryl.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/carbaryl.pdf  used on input line 65.
+(pdftex.def)             Requested size: 240.29697pt x 188.3573pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbofuran.pdf, id=6, 4
+16.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbofuran.pdf Gra
+phic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbofuran.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/carbofuran.pdf  used on input line 73.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 29--79
+[]$[]$$[]$
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 29--79
+[]$$[]$
+ []
+
+[1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
+
+ </home/jklimavicz/Documents/merlin_stats_out/images/pdf/acetamiprid.pdf> </hom
+e/jklimavicz/Documents/merlin_stats_out/images/pdf/aldicarb.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/aldicarb.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/aziphos-methyl.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/aziphos-methyl.pdf): PDF inclusion: multiple pdfs with page group includ
+ed in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/bifenthrin.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/bifenthrin.pdf): PDF inclusion: multiple pdfs with page group included i
+n a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbaryl.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/carbaryl.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/carbofuran.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/carbofuran.pdf): PDF inclusion: multiple pdfs with page group included i
+n a single page
+>]
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorantraniliprole.pdf
+, id=247, 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorantraniliprol
+e.pdf Graphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorantraniliprole
+.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/chlorantraniliprole.pdf  used on input line 86.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorfenapyr.pdf, id=24
+8, 416.70178pt x 326.62701pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorfenapyr.pdf G
+raphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorfenapyr.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/chlorfenapyr.pdf  used on input line 94.
+(pdftex.def)             Requested size: 240.29697pt x 188.3573pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorpyrifos.pdf, id=24
+9, 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorpyrifos.pdf G
+raphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorpyrifos.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/chlorpyrifos.pdf  used on input line 103.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/clothianidin.pdf, id=25
+0, 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/clothianidin.pdf G
+raphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/clothianidin.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/clothianidin.pdf  used on input line 111.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/cyantraniliprole.pdf, i
+d=251, 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/cyantraniliprole.p
+df Graphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/cyantraniliprole.pd
+f>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/cyantraniliprole.pdf  used on input line 120.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/beta-cypermethrin.pdf, 
+id=252, 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/beta-cypermethrin.
+pdf Graphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/beta-cypermethrin.p
+df>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/beta-cypermethrin.pdf  used on input line 128.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 84--134
+[]$[]$$[]$
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 84--134
+[]$$[]$
+ []
+
+[2
+
+ </home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorantraniliprole.pd
+f> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorfenapyr.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/chlorfenapyr.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/chlorpyrifos.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/chlorpyrifos.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/clothianidin.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/clothianidin.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/cyantraniliprole.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/cyantraniliprole.pdf): PDF inclusion: multiple pdfs with page group incl
+uded in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/beta-cypermethrin.pdf
+
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/beta-cypermethrin.pdf): PDF inclusion: multiple pdfs with page group inc
+luded in a single page
+>]
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/DDT.pdf, id=490, 416.70
+178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/DDT.pdf Graphic fi
+le (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/DDT.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/DDT.pdf  used on input line 141.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/ddvp.pdf, id=491, 416.7
+0178pt x 326.62701pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/ddvp.pdf Graphic f
+ile (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/ddvp.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/ddvp.pdf  used on input line 149.
+(pdftex.def)             Requested size: 240.29697pt x 188.3573pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/fipronil.pdf, id=492, 4
+16.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/fipronil.pdf Graph
+ic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/fipronil.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/fipronil.pdf  used on input line 158.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/imidacloprid.pdf, id=49
+3, 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/imidacloprid.pdf G
+raphic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/imidacloprid.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/imidacloprid.pdf  used on input line 166.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/malathion.pdf, id=494, 
+416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/malathion.pdf Grap
+hic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/malathion.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/malathion.pdf  used on input line 175.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/naled.pdf, id=495, 416.
+70178pt x 326.62701pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/naled.pdf Graphic 
+file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/naled.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/naled.pdf  used on input line 183.
+(pdftex.def)             Requested size: 240.29697pt x 188.3573pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 139--189
+[]$[]$$[]$
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 139--189
+[]$$[]$
+ []
+
+[3
+
+ </home/jklimavicz/Documents/merlin_stats_out/images/pdf/DDT.pdf> </home/jklima
+vicz/Documents/merlin_stats_out/images/pdf/ddvp.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/ddvp.pdf): PDF inclusion: multiple pdfs with page group included in a si
+ngle page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/fipronil.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/fipronil.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/imidacloprid.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/imidacloprid.pdf): PDF inclusion: multiple pdfs with page group included
+ in a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/malathion.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/malathion.pdf): PDF inclusion: multiple pdfs with page group included in
+ a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/naled.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/naled.pdf): PDF inclusion: multiple pdfs with page group included in a s
+ingle page
+>]
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/S-nicotine.pdf, id=722,
+ 416.70178pt x 326.62701pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/S-nicotine.pdf Gra
+phic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/S-nicotine.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/S-nicotine.pdf  used on input line 196.
+(pdftex.def)             Requested size: 240.29697pt x 188.3573pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/permethrin.pdf, id=723,
+ 416.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/permethrin.pdf Gra
+phic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/permethrin.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/permethrin.pdf  used on input line 204.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/phorate.pdf, id=724, 41
+6.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/phorate.pdf Graphi
+c file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/phorate.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/phorate.pdf  used on input line 213.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/propoxur.pdf, id=725, 4
+16.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/propoxur.pdf Graph
+ic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/propoxur.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/propoxur.pdf  used on input line 221.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+</home/jklimavicz/Documents/merlin_stats_out/images/pdf/pyethrum.pdf, id=726, 4
+16.70178pt x 329.35596pt>
+File: /home/jklimavicz/Documents/merlin_stats_out/images/pdf/pyethrum.pdf Graph
+ic file (type pdf)
+<use /home/jklimavicz/Documents/merlin_stats_out/images/pdf/pyethrum.pdf>
+Package pdftex.def Info: /home/jklimavicz/Documents/merlin_stats_out/images/pdf
+/pyethrum.pdf  used on input line 230.
+(pdftex.def)             Requested size: 240.29697pt x 189.931pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 194--236
+[]$[]$$[]$
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 194--236
+[]$$[]$
+ []
+
+[4
+
+ </home/jklimavicz/Documents/merlin_stats_out/images/pdf/S-nicotine.pdf> </home
+/jklimavicz/Documents/merlin_stats_out/images/pdf/permethrin.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/permethrin.pdf): PDF inclusion: multiple pdfs with page group included i
+n a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/phorate.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/phorate.pdf): PDF inclusion: multiple pdfs with page group included in a
+ single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/propoxur.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/propoxur.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+> </home/jklimavicz/Documents/merlin_stats_out/images/pdf/pyethrum.pdf
+
+pdfTeX warning: pdflatex (file /home/jklimavicz/Documents/merlin_stats_out/imag
+es/pdf/pyethrum.pdf): PDF inclusion: multiple pdfs with page group included in 
+a single page
+>] (./graphs.aux) ) 
+Here is how much of TeX's memory you used:
+ 6079 strings out of 481239
+ 96510 string characters out of 5920378
+ 346667 words of memory out of 5000000
+ 21249 multiletter control sequences out of 15000+600000
+ 537806 words of font info for 46 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 48i,10n,63p,1135b,574s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmbx9.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbxt
+i10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb
+></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/
+share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></usr/share/te
+xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb>
+Output written on graphs.pdf (4 pages, 422532 bytes).
+PDF statistics:
+ 938 PDF objects out of 1000 (max. 8388607)
+ 147 compressed objects within 2 object streams
+ 0 named destinations out of 1000 (max. 500000)
+ 116 words of extra memory for PDF output out of 10000 (max. 10000000)
+
