@@ -128,15 +128,21 @@ def check_library_change(cmpd_options, dict_options):
 def CI_helper(kernel_sample, CI_level = 0.95, min_sample_size = 25000, resample = True):
     def est_gaussian_kernel_bandwidth(data):
         #Scott’s rule of thumb
-        bw = 1.06*np.std(data)*(len(data)**-0.2)
-        # print(bw)
+        IQR = np.quantile(kernel_sample, [0.25, 0.75], interpolation='linear', axis = 0)
+        mid = (IQR[1] - IQR[0])/1.34
+        std = np.std(data, axis = 0)
+        mult = np.minimum(mid, std)
+        bw = 0.9*mult*(len(data)**-0.2)
+        # print("BW:", bw)
         return bw
     n = len(kernel_sample)
     if n < min_sample_size and resample:
         if kernel_sample.ndim == 1 : kernel_sample = kernel_sample.reshape(-1, 1) 
         bw = est_gaussian_kernel_bandwidth(kernel_sample)
-        kernel_density = KD(kernel='gaussian', bandwidth=bw).fit(kernel_sample)
-        sample = kernel_density.sample(min_sample_size)
+        for i in range(len(bw)):
+            kernel_density = KD(kernel='gaussian', bandwidth=bw[i]).fit(kernel_sample)
+            if i == 0: sample = kernel_density.sample(min_sample_size)
+            else: sample = np.append(sample, kernel_density.sample(min_sample_size), axis = 1)
     else: sample = kernel_sample.squeeze()
     return np.sort(sample, axis= 0)
 
