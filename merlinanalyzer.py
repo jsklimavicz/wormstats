@@ -23,9 +23,15 @@ class MerlinAnalyzer:
 	picklesha1hash = ".picklehash"
 	sha_key = b"merlin-data"
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, 
+					*args, 
+					config_path = os.path.abspath('.'),
+					config_filename = 'analysis_config.txt', 
+					**kwargs):
 		self.cmpd_data = {}
-		self.options = utils.parse_config_file()
+		self.options = utils.parse_config_file(config_path = config_path, config_filename = config_filename)
+		self.status_message = ""
+		self.progress = 0.0
 
 	def column_name_modifier(self, filename):
 		'''
@@ -59,6 +65,7 @@ class MerlinAnalyzer:
 		'''
 		Driver to read in new data based on a .csv filename and a key.csv file
 		'''
+		self.status_message = "Reading new data."
 		new_data = self.column_name_modifier(filename) #check/change filenames
 		cmpd_data = deepcopy(new_data[new_data["Conc"] != 0])
 		#Find control mortalities
@@ -73,6 +80,7 @@ class MerlinAnalyzer:
 		#Remove any rows with missing count or compound data.
 		cmpd_data.dropna(subset = ['Live', 'Dead', 'Compound'], inplace=True)
 		cmpd_data = cmpd_data[cmpd_data.Count != 0]
+
 		return self.process_compounds(cmpd_data)
 
 	def read_key(self, filename):
@@ -84,11 +92,14 @@ class MerlinAnalyzer:
 		Reads in old pickle file after making sure that the file is not corrupted/modified
 		by means of using a sha1 hash
 		'''
+		self.status_message = "Reading archived data."
 		with open(os.path.join(filepath, self.picklesha1hash), 'r') as file:
 			pickle_hash = file.read().strip()
 		with open(os.path.join(filepath, self.archivefilename), 'rb') as file:
 			pickled_data = file.read()
 		digest =  hmac.new(self.sha_key, pickled_data, hashlib.sha1).hexdigest()
+		self.progress = 2.0 #update progress for each compound
+
 		if pickle_hash == digest:
 			unpickled_data = pickle.loads(pickled_data)
 			return unpickled_data
@@ -120,6 +131,8 @@ class MerlinAnalyzer:
 				else: self.cmpd_data[k] = v
 				# self.cmpd_data[k].test_print()
 
+		self.progress = 4.0 #update progress for each compound
+
 	def save_archive(self, filepath, *args, **kwargs):
 		saveable_lib = {}
 		for k, v in self.cmpd_data.items():
@@ -133,7 +146,9 @@ class MerlinAnalyzer:
 			file.write(pickle_data)
 		
 	def process_compounds(self, new_data, *args, **kwargs):
+		self.status_message = "Processing compounds with new data."
 		new_compound_dict = {}
+		self.number_of_compounds = len(new_data["Compound"].unique())
 		for cmpd_id in new_data["Compound"].unique():
 
 			cmpd_data = new_data[new_data["Compound"] == cmpd_id].copy()
@@ -157,6 +172,9 @@ class MerlinAnalyzer:
 							ctrl_mort = np.array(cmpd_data["ctrl_mort"].tolist()),
 							unique_plate_ids = unique_ids,
 							*args, **kwargs)
+
+			self.progress += 2.0/self.number_of_compounds #update progress for each compound
+
 		return new_compound_dict
 
 	def save_csv(self, filename, header, body):
@@ -167,7 +185,6 @@ class MerlinAnalyzer:
 	
 	def generate_csv_data_lines(self, header):
 		output = []
-
 		for cmpd_name, cmpd in self.cmpd_data.items():
 			line = []
 			comment = " "
@@ -272,7 +289,6 @@ class MerlinAnalyzer:
 		diff = cmpd_kernel - ref_kernel if self.options['REL_POT_TO_REF'] else kernel2 - kernel1
 		func = utils.calc_ET_CI if self.options["CI_METHOD"].lower() in utils.ET_VARS else utils.calc_HPDI_CI
 		vals = func(diff, CI_level = self.options['REL_POT_CI'])
-
 		return np.power(2., vals).T
 
 	def full_process(self, 
@@ -298,6 +314,8 @@ class MerlinAnalyzer:
 		LW = LatexWriter(img_folder = pdf_dir)
 		# cmpd_ct = 0
 		for cmpd_name, cmpd in self.cmpd_data.items():
+			self.progress += 84.0/self.number_of_compounds #update progress for each compound
+			self.status_message = f"Calculating LC data and dose-response curves for {cmpd_name:s}."
 			cmpd.fit_data(options = self.options)
 			cmpd.make_plot()
 			pdf_path = cmpd.plot.save_plot(cmpd_name, image_dir, pdf_dir = pdf_dir)
@@ -318,9 +336,20 @@ class MerlinAnalyzer:
 				R2 = utils.format_lc_val(cmpd.curve_data.r2), 
 				bio_reps = len(cmpd.data['test_dates']),
 				tech_reps = str(cmpd.data["n_trials"]))
+
+		self.status_message = "Archiving data."
+		self.progress = 91.0  #update progress for each compound
 		self.save_archive(archive_path, *args, **kwargs)
+
+		self.status_message = "Creating output csv."
+		self.progress = 95.0  #update progress for each compound
 		header = self.generate_csv_header()
 		body = self.generate_csv_data_lines(header)
 		if csv_outfile: self.save_csv(os.path.abspath(os.path.join(out_path, csv_outfile)), header, body, *args, **kwargs)
+
+		self.progress = 99.5  #update progress for each compound
+		self.status_message = "Creating output pdf with dose-response curves."
 		LW.write_file(out_path = os.path.abspath(os.path.join(out_path, pdf_outfile+".tex")) )
+		self.progress = 100.0
+		self.status_message = "Statistical analysis complete."
 
