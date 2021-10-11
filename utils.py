@@ -9,45 +9,64 @@ from statistics import median
 
 ET_VARS = ["equal-tailed", "equal", "et", "even", "even-tailed"]
 
-def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'analysis_config.txt'):
+def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'analysis_config.txt', **kwargs):
     '''
     Reads in the configuration file 'analysis_config.txt' and converts the specified data to the appropriate type. 
     '''
     config_dict = default_config()
     config_file_path = os.path.join(config_path, config_filename)
 
+    #first read config file
     with open(config_file_path, 'r') as file:
         line_count = 0
         for line in file:
             line_count += 1
             if line[0]=="#" or not line.strip(): continue
+            line = line.split('#')[0] #don't read anything after the first '#'
             (key, val) = line.split('=')
-            key = key.strip()
-            val = val.strip().strip('"').strip("'")
-            if key in ['PLOT_ERROR_BARS', 'JITTER', 'PLOT_LINE', 
-                        'PLOT_DATA_POINTS', 'PLOT_CURVE_ERROR', 'REL_POT_TO_REF']: 
-                val = True if "true" in val.lower() else False
-            elif key in ['LC_VALUES']: 
-                val = np.array([float(i.strip()) for i in val.split(",")])/100.
-            elif key in ['RHO', 'BETA_PRIOR', 'BETA_PRIOR_0', 
-                        'JITTER_FACTOR', 'ALPHA', 'CURVE_CI', 
-                        'LC_CI', 'ERROR_BAR_CI', 'REL_POT_CI', 
-                        'EXTRAPOLATION_FACTOR']: 
-                val = float(val)/100. if key in ['CURVE_CI', 'LC_CI', 'REL_POT_CI', 'ERROR_BAR_CI'] else float(val)
-                if key == 'JITTER_FACTOR':
-                    if val < 0: val = 0
-                    elif val > 0.5: val = 0.4
-            elif key in ['BOOTSTRAP_ITERS', 'N_POINTS', 'NCPU', 'ERROR_BAR_CUTOFF']: 
-                val = int(val)
-            elif key in ["CI_METHOD"]:
-                val = val.lower()
+            key, val = config_parse_helper(key, val)
+            #default behaviour: val is simply the stripped string. 
             config_dict[key] = val
+
+    #then use kwargs, if present. NB: This supersedes the config file. 
+    for key, val in **kwargs.items():
+        key, val = config_parse_helper(key, val)
+        config_dict[key] = val
+
     return config_dict
+
+
+def config_parse_helper(key, val):
+    key = key.strip()
+    val = val.strip().strip('"').strip("'")
+    if key in ['PLOT_ERROR_BARS', 'JITTER', 'PLOT_LINE', 
+                'PLOT_DATA_POINTS', 'PLOT_CURVE_ERROR', 'REL_POT_TO_REF']: 
+        val = True if "true" in val.lower() else False
+    elif key in ['LC_VALUES']: 
+        val = np.array([float(i.strip()) for i in val.split(",")])/100.
+    elif key in ['RHO', 'BETA_PRIOR', 'BETA_PRIOR_0', 
+                'JITTER_FACTOR', 'ALPHA', 'CURVE_CI', 
+                'LC_CI', 'ERROR_BAR_CI', 'REL_POT_CI', 
+                'EXTRAPOLATION_FACTOR']: 
+        val = float(val)/100. if key in ['CURVE_CI', 'LC_CI', 'REL_POT_CI', 'ERROR_BAR_CI'] else float(val)
+        if key == 'JITTER_FACTOR':
+            if val < 0: val = 0
+            elif val > 0.5: val = 0.4
+    elif key in ['BOOTSTRAP_ITERS', 'N_POINTS', 'NCPU', 'ERROR_BAR_CUTOFF']: 
+        val = int(val)
+    elif key in ["CI_METHOD"]:
+        val = val.lower()
+    elif key in ["OUTPUT_PDF_NAME"]:
+        if val[-4:].lower() in ['.pdf', '.tex']: val = val[:-4] #strip pdf ending
 
 def default_config():
     config_dict = {
-                    'ARCHIVE_DIR': None,
-                    'OUT_DIR': None,
+                    'ARCHIVE_PATH': None,
+                    'SAVE_PATH': None,
+                    'OUTPUT_CSV_NAME': 'output.csv',
+                    'OUTPUT_PDF_NAME': 'graphs.pdf',
+                    'INPUT_PATH': None,
+                    'MASK_RCNN_SAVE': True,
                     'NCPU': -1,
                     'BOOTSTRAP_ITERS': 1000,
                     'RHO': 0.10,
@@ -138,23 +157,27 @@ def check_library_change(cmpd_options, dict_options):
 def CI_helper(kernel_sample, CI_level = 0.95, min_sample_size = 100000, resample = True):
     
     def est_gaussian_kernel_bandwidth(data):
-        #Scott’s rule of thumb
+        ''' 
+        Uses Scott’s rule of thumb with IQR adjustment
+        According to the wikipedia page https://en.wikipedia.org/wiki/Kernel_density_estimation,
+        which cites
+        Silverman, B.W. (1986). Density Estimation for Statistics and Data Analysis. 
+            London: Chapman & Hall/CRC. p. 45. ISBN 978-0-412-24620-3.
+        '''
         IQR = np.quantile(kernel_sample, [0.25, 0.75], interpolation='linear', axis = 0)
         mid = (IQR[1] - IQR[0])/1.34
         std = np.std(data, axis = 0)
         mult = np.minimum(mid, std)
         bw = 0.9*mult*(len(data)**-0.2)
-        # print("BW:", bw)
         return bw
+
     n = len(kernel_sample)
-    # print("Initial length:",len(kernel_sample))
     if n < min_sample_size and resample:
-        if kernel_sample.ndim == 1 : kernel_sample = kernel_sample.reshape(-1, 1) 
+        if kernel_sample.ndim == 1 : kernel_sample = kernel_sample.reshape(-1, 1) #reshape from weird shape
         bw = est_gaussian_kernel_bandwidth(kernel_sample)
-        # print("BW:",bw)
         for i in range(len(bw)):
-            # print(i, kernel_sample[:,i].reshape(-1, 1).shape)
-            kernel_density = KD(kernel='gaussian', bandwidth=bw[i]).fit(kernel_sample[:,i].reshape(-1, 1) )
+            #again reshape from weird shape
+            kernel_density = KD(kernel='gaussian', bandwidth=bw[i]).fit(kernel_sample[:,i].reshape(-1, 1))
             if i == 0: sample = kernel_density.sample(min_sample_size)
             else: sample = np.append(sample, kernel_density.sample(min_sample_size), axis = 1)
     else: sample = kernel_sample.squeeze()
