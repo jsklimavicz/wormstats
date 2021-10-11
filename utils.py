@@ -29,7 +29,7 @@ def parse_config_file(config_path = os.path.abspath('.'), config_filename = 'ana
             config_dict[key] = val
 
     #then use kwargs, if present. NB: This supersedes the config file. 
-    for key, val in **kwargs.items():
+    for key, val in kwargs.items():
         key, val = config_parse_helper(key, val)
         config_dict[key] = val
 
@@ -58,6 +58,8 @@ def config_parse_helper(key, val):
         val = val.lower()
     elif key in ["OUTPUT_PDF_NAME"]:
         if val[-4:].lower() in ['.pdf', '.tex']: val = val[:-4] #strip pdf ending
+
+    return key, val
 
 def default_config():
     config_dict = {
